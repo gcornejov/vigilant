@@ -1,5 +1,4 @@
 import os
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
@@ -14,8 +13,9 @@ class Secrets(metaclass=MetaSecrets):
     USERNAME: Final[str] = "PORTAL_USERNAME"
     PASSWORD: Final[str] = "PORTAL_PASSWORD"
 
-    LOGIN_URL: Final[str] = "PORTAL_LOGIN"
-    CREDIT_TRANSACTIONS_URL: Final[str] = "CREDIT_TRANSACTIONS"
+    LOGIN_URL: Final[str] = "PORTAL_LOGIN_URL"
+    HOME_URL: Final[str] = "PORTAL_HOME_URL"
+    CREDIT_TRANSACTIONS_URL: Final[str] = "CREDIT_TRANSACTIONS_URL"
 
 
 class Locators:
