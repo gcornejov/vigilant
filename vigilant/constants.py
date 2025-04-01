@@ -4,9 +4,10 @@ from typing import Final
 
 
 class MetaSecrets(type):
-    def __getattribute__(cls, name):
-        env_var: str = object.__getattribute__(cls, name)
-        return os.getenv(env_var)
+    def __getattribute__(cls, name: str) -> str:
+        env_var: str = str(object.__getattribute__(cls, name))
+
+        return os.getenv(env_var, "")
 
 
 class Secrets(metaclass=MetaSecrets):
