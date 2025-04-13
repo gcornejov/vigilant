@@ -32,6 +32,11 @@ def main() -> None:
 
 
 def build_driver_options() -> FirefoxOptions:
+    """Setup profile for Firefox instance
+
+    Returns:
+        FirefoxOptions: Firefox profile object
+    """
     options = FirefoxOptions()
     options.set_preference("browser.download.folderList", 2)
     options.set_preference("browser.download.manager.showWhenStarting", False)
@@ -44,6 +49,12 @@ def build_driver_options() -> FirefoxOptions:
 
 @contextmanager
 def driver_session() -> Generator[WebDriver]:
+    """Creates a driver object to interact with a Firefox Browser instance.
+    Closes the driver when exit the context
+
+    Yields:
+        Generator[WebDriver]: Firefox driver object
+    """
     options: FirefoxOptions = build_driver_options()
 
     driver = Firefox(options=options)
@@ -56,6 +67,8 @@ def driver_session() -> Generator[WebDriver]:
 
 
 def clear_resources() -> None:
+    """Setup resources directory for data persistence
+    """
     shutil.rmtree(IOResources.DATA_PATH, ignore_errors=True)
     IOResources.DATA_PATH.mkdir(parents=True, exist_ok=True)
 
@@ -77,6 +90,11 @@ def timeout_retry(timeout: float | None = None) -> Callable:
 
 
 def login(driver: WebDriver) -> None:
+    """Automate login to the user web portal
+
+    Args:
+        driver (WebDriver): Firefox driver object
+    """
     driver.get(Secrets.LOGIN_URL)
     driver.find_element(By.ID, Locators.USER_INPUT_ID).send_keys(Secrets.USERNAME)
     driver.find_element(By.ID, Locators.PASSWORD_INPUT_ID).send_keys(Secrets.PASSWORD)
@@ -87,6 +105,14 @@ def login(driver: WebDriver) -> None:
 
 @timeout_retry()
 def check_login(driver: WebDriver) -> None:
+    """Checks if the login completed successfully
+
+    Args:
+        driver (WebDriver): Firefox driver object
+
+    Raises:
+        Exception: Raised if the current URL doesn't match the Portal Home URL
+    """
     if Secrets.HOME_URL in driver.current_url:
         return
 
@@ -108,7 +134,7 @@ def get_credit_transactions(driver: WebDriver) -> None:
 def check_credit_transactions(driver: WebDriver) -> None:
     driver.find_element(By.XPATH, Locators.GROUP_BTN_XPATH).click()
     driver.find_element(By.XPATH, Locators.DOWNLOAD_BTN_XPATH).click()
-    time.sleep(1)
+    time.sleep(3)
 
 
 @timeout_retry()

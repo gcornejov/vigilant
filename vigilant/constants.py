@@ -4,6 +4,10 @@ from typing import Final
 
 
 class MetaSecrets(type):
+    """
+    A metaclass used to access a environment variable from a class attribute value
+    """
+
     def __getattribute__(cls, name: str) -> str:
         env_var: str = str(object.__getattribute__(cls, name))
 
@@ -43,7 +47,7 @@ class IOResources:
 
 
 class BalanceSpreadsheet:
-    KEY: Final[str] = "1taIEqVbrNWLElerpntsjryVte28nZClsSemSFiRcz4I"
+    KEY: Final[str] = "1IKyPmWeaZ_5IRa4I4EOgVwu5oGZ9RSQqQxjRu9P4qY4"
 
     EXPENSES_WORKSHEET_NAME: Final[str] = "Gastos"
 
