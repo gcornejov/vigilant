@@ -7,7 +7,7 @@ import pytest
 from selenium.webdriver import ChromeOptions
 
 from vigilant import data_collector
-from vigilant import IOResources
+from vigilant.constants import IOResources
 
 
 @pytest.fixture

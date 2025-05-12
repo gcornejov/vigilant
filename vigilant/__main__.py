@@ -1,4 +1,4 @@
-from vigilant import run
+from vigilant.run import main as run
 
 
 if __name__ == "__main__":
