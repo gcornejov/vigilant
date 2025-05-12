@@ -20,3 +20,9 @@ gcloud auth application-default login \
 ```shell
 poetry run vigilant
 ```
+
+## Start service locally
+
+```shell
+poetry run uvicorn vigilant.app:app --host 0.0.0.0 --port 8080 --reload
+```

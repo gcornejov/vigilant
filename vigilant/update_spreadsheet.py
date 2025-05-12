@@ -6,7 +6,7 @@ import google.auth
 import pandas as pd
 from gspread import Spreadsheet, Worksheet
 
-from vigilant import BalanceSpreadsheet, IOResources
+from vigilant.constants import BalanceSpreadsheet, IOResources
 
 
 def main() -> None:

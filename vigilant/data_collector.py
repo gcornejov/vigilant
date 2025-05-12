@@ -9,7 +9,7 @@ from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 
-from vigilant import Locators, Secrets, IOResources
+from vigilant.constants import Locators, Secrets, IOResources
 
 DEFAULT_TIMEOUT: Final[float] = 25.0
 
