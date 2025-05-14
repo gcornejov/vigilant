@@ -26,3 +26,19 @@ poetry run vigilant
 ```shell
 poetry run uvicorn vigilant.app:app --host 0.0.0.0 --port 8080 --reload
 ```
+
+## Start service in container with local changes
+
+```shell
+docker build -t vigilant .
+
+docker run --rm \
+    --cpus 1 --memory 1024M -p 8080:8080 \
+    -v ./vigilant:/vigilant \
+    -e PORTAL_USERNAME=$PORTAL_USERNAME \
+    -e PORTAL_PASSWORD=$PORTAL_PASSWORD \
+    -e PORTAL_LOGIN_URL=$PORTAL_LOGIN_URL \
+    -e PORTAL_HOME_URL=$PORTAL_HOME_URL \
+    -e CREDIT_TRANSACTIONS_URL=$CREDIT_TRANSACTIONS_URL \
+    vigilant
+```
