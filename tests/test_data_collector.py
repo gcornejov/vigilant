@@ -1,11 +1,10 @@
-import os
 import time
 from collections.abc import Generator
 from pathlib import Path
 from unittest import mock
 
 import pytest
-from selenium.webdriver import FirefoxOptions
+from selenium.webdriver import ChromeOptions
 
 from vigilant import data_collector
 from vigilant import IOResources
@@ -39,19 +38,37 @@ def test_main(
     logout.assert_called_once()
 
 
-def test_build_driver_options() -> None:
+def test_build_driver_options(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    expected_preferences: tuple[tuple[str, (bool | str)], ...] = (
+        ("download.default_directory", str(tmp_path)),
+        ("download.prompt_for_download", False),
+        ("download.directory_upgrade", True),
+        ("safebrowsing_for_trusted_sources_enabled", False),
+        ("safebrowsing.enabled", False),
+    )
+    expected_arguments: list[str] = [
+        "--headless",
+        "--no-sandbox",
+        "--verbose",
+        "--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.7103.92 Safari/537.36",
+        "--disable-gpu",
+        "--disable-notifications",
+        "--disable-dev-shm-usage",
+        "--disable-setuid-sandbox",
+        "--disable-software-rasterizer",
+    ]
+
+    monkeypatch.setattr("vigilant.constants.IOResources.DATA_PATH", tmp_path)
+
     options = data_collector.build_driver_options()
+    preferences = options.experimental_options["prefs"].items()
 
-    assert isinstance(options, FirefoxOptions)
-
-    assert (("browser.download.folderList", 2) in options.preferences.items())
-    assert (("browser.download.manager.showWhenStarting", False) in options.preferences.items())
-    assert (("browser.download.dir", "/var/lib/vigilant/data_collection") in options.preferences.items())
-
-    assert "--headless" in options.arguments
+    assert isinstance(options, ChromeOptions)
+    assert all([expect_pref in preferences for expect_pref in expected_preferences])
+    assert all([expect_args in options.arguments for expect_args in expected_arguments])
 
 
-@mock.patch("vigilant.data_collector.Firefox")
+@mock.patch("vigilant.data_collector.Chrome")
 def test_driver_session(mock_driver_class: mock.MagicMock) -> None:
     mock_driver_class.return_value = mock.MagicMock()
 

@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from functools import wraps
 from typing import Final
 
-from selenium.webdriver import Firefox, FirefoxOptions
+from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 
@@ -32,33 +32,47 @@ def main() -> None:
         logout(driver)
 
 
-def build_driver_options() -> FirefoxOptions:
-    """Setup profile for Firefox instance
+def build_driver_options() -> ChromeOptions:
+    """Setup profile for Chrome instance
 
     Returns:
-        FirefoxOptions: Firefox profile object
+        ChromeOptions: Chrome profile object
     """
-    options = FirefoxOptions()
-    options.set_preference("browser.download.folderList", 2)
-    options.set_preference("browser.download.manager.showWhenStarting", False)
-    options.set_preference("browser.download.dir", IOResources.DATA_PATH.as_posix())
+    options = ChromeOptions()
+    options.add_experimental_option("prefs", {
+        "download.default_directory": IOResources.DATA_PATH.as_posix(),
+        "download.prompt_for_download": False,
+        "download.directory_upgrade": True,
+        "safebrowsing_for_trusted_sources_enabled": False,
+        "safebrowsing.enabled": False
+    })
 
     options.add_argument("--headless")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--verbose")
+
+    options.add_argument("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.7103.92 Safari/537.36")
+
+    options.add_argument("--disable-gpu")
+    options.add_argument("--disable-notifications")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-setuid-sandbox")
+    options.add_argument("--disable-software-rasterizer")
 
     return options
 
 
 @contextmanager
 def driver_session() -> Generator[WebDriver]:
-    """Creates a driver object to interact with a Firefox Browser instance.
+    """Creates a driver object to interact with a Chrome Browser instance.
     Closes the driver when exit the context
 
     Yields:
-        Generator[WebDriver]: Firefox driver object
+        Generator[WebDriver]: Chrome driver object
     """
-    options: FirefoxOptions = build_driver_options()
+    options: ChromeOptions = build_driver_options()
 
-    driver = Firefox(options=options)
+    driver = Chrome(options=options)
     try:
         driver.maximize_window()
 
@@ -93,7 +107,7 @@ def login(driver: WebDriver) -> None:
     """Automate login to the user web portal
 
     Args:
-        driver (WebDriver): Firefox driver object
+        driver (WebDriver): Chrome driver object
     """
     driver.get(Secrets.LOGIN_URL)
     driver.find_element(By.ID, Locators.USER_INPUT_ID).send_keys(Secrets.USERNAME)
@@ -102,13 +116,12 @@ def login(driver: WebDriver) -> None:
 
     check_login(driver)
 
-
 @timeout_retry()
 def check_login(driver: WebDriver) -> None:
     """Checks if the login completed successfully
 
     Args:
-        driver (WebDriver): Firefox driver object
+        driver (WebDriver): Chrome driver object
 
     Raises:
         Exception: Raised if the current URL doesn't match the Portal Home URL
@@ -124,7 +137,7 @@ def get_current_amount(driver: WebDriver) -> None:
     """Collect current account amount and save it in a file
 
     Args:
-        driver (WebDriver): Firefox driver object
+        driver (WebDriver): Chrome driver object
     """
     account_amount: str = driver.find_element(By.CLASS_NAME, Locators.AMOUNT_TEXT_CLASS).text
     (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).write_text(account_amount.replace(".", "").replace("$", "").strip())
@@ -134,7 +147,7 @@ def get_credit_transactions(driver: WebDriver) -> None:
     """Collect current transactions on credit card
 
     Args:
-        driver (WebDriver): Firefox driver object
+        driver (WebDriver): Chrome driver object
     """
     driver.get(Secrets.CREDIT_TRANSACTIONS_URL)
     check_credit_transactions(driver)
@@ -145,7 +158,7 @@ def check_credit_transactions(driver: WebDriver) -> None:
     """Try to download credit card transactions
 
     Args:
-        driver (WebDriver): Firefox driver object
+        driver (WebDriver): Chrome driver object
     """
     driver.find_element(By.XPATH, Locators.GROUP_BTN_XPATH).click()
     driver.find_element(By.XPATH, Locators.DOWNLOAD_BTN_XPATH).click()
@@ -157,7 +170,7 @@ def logout(driver: WebDriver) -> None:
     """Performs logout for Web portal
 
     Args:
-        driver (WebDriver): Firefox driver object
+        driver (WebDriver): Chrome driver object
     """
     driver.find_element(By.CLASS_NAME, Locators.LOGOUT_BTN_CLASS).click()
 
