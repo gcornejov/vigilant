@@ -24,9 +24,9 @@ class Secrets(metaclass=MetaSecrets):
 
 
 class Locators:
-    USER_INPUT_ID: Final[str] = "iduserName"
-    PASSWORD_INPUT_ID: Final[str] = "password"
-    LOGIN_BTN_ID: Final[str] = "idIngresar"
+    USER_INPUT_ID: Final[str] = "ppriv_per-click-input-rut"
+    PASSWORD_INPUT_ID: Final[str] = "ppriv_per-click-input-password"
+    LOGIN_BTN_ID: Final[str] = "ppriv_per-click-ingresar-login"
 
     AMOUNT_TEXT_CLASS: Final[str] = "monto-cuenta"
     LOGOUT_BTN_CLASS: Final[str] = "button-logout"

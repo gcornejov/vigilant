@@ -18,5 +18,5 @@ gcloud auth application-default login \
 ## Run application
 
 ```shell
-poetry run python -m vigilant
+poetry run vigilant
 ```

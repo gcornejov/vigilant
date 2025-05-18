@@ -10,6 +10,7 @@ from vigilant import BalanceSpreadsheet, IOResources
 
 
 def main() -> None:
+    """Load expenses data into a google spreadsheet"""
     current_amount: int = load_amount()
     expenses_filepath: Path = find_expenses_file()
     expenses: list[list[Any]] = prepare_expenses(expenses_filepath)
@@ -17,19 +18,35 @@ def main() -> None:
     update_balance_spreadsheet(current_amount, expenses)
 
 
-def load_amount() -> int:
-    return int(
-        (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).read_text()
-    )
+def load_amount() -> str:
+    """Loads amount from file
+
+    Returns:
+        str: Amount
+    """
+    return (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).read_text()
 
 
 def find_expenses_file() -> Path:
+    """Find file path containing the expenses
+
+    Returns:
+        Path: Expenses file path
+    """
     return next(
         IOResources.DATA_PATH.glob("*.xls")
     )
 
 
-def prepare_expenses(expenses_filepath: Path) -> list[list[Any]]:
+def prepare_expenses(expenses_filepath: Path) -> list[list[str]]:
+    """Load expenses data from file and prepares it to load
+
+    Args:
+        expenses_filepath (Path): Expenses file path
+
+    Returns:
+        list[list[str]]: Prepared expenses data
+    """
     EXPENSES_COLUMNS_INDEX: tuple[str] = (1, 4, 6, 10)
     EXPENSES_COLUMNS_KEYS: tuple[str] = ("date", "description", "location", "amount")
     CARD_PAYMENT_DESC: Final[str] = "TEF PAGO NORMAL"
@@ -50,7 +67,13 @@ def prepare_expenses(expenses_filepath: Path) -> list[list[Any]]:
     return expenses.values.tolist()
 
 
-def update_balance_spreadsheet(account_amount: int, expenses: list[list[str]]) -> None:
+def update_balance_spreadsheet(account_amount: str, expenses: list[list[str]]) -> None:
+    """Uploads expenses data into a google spreadsheet
+
+    Args:
+        account_amount (str): Account amount
+        expenses (list[list[str]]): Expenses list
+    """
     scopes: list[str] = [
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive",

@@ -15,6 +15,7 @@ DEFAULT_TIMEOUT: Final[float] = 25.0
 
 
 def main() -> None:
+    """Collect expenses data"""
     with driver_session() as driver:
         clear_resources()
 
@@ -67,8 +68,7 @@ def driver_session() -> Generator[WebDriver]:
 
 
 def clear_resources() -> None:
-    """Setup resources directory for data persistence
-    """
+    """Setup resources directory for data persistence"""
     shutil.rmtree(IOResources.DATA_PATH, ignore_errors=True)
     IOResources.DATA_PATH.mkdir(parents=True, exist_ok=True)
 
@@ -121,17 +121,32 @@ def check_login(driver: WebDriver) -> None:
 
 @timeout_retry()
 def get_current_amount(driver: WebDriver) -> None:
+    """Collect current account amount and save it in a file
+
+    Args:
+        driver (WebDriver): Firefox driver object
+    """
     account_amount: str = driver.find_element(By.CLASS_NAME, Locators.AMOUNT_TEXT_CLASS).text
     (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).write_text(account_amount.replace(".", "").replace("$", "").strip())
 
 
 def get_credit_transactions(driver: WebDriver) -> None:
+    """Collect current transactions on credit card
+
+    Args:
+        driver (WebDriver): Firefox driver object
+    """
     driver.get(Secrets.CREDIT_TRANSACTIONS_URL)
     check_credit_transactions(driver)
 
 
 @timeout_retry()
 def check_credit_transactions(driver: WebDriver) -> None:
+    """Try to download credit card transactions
+
+    Args:
+        driver (WebDriver): Firefox driver object
+    """
     driver.find_element(By.XPATH, Locators.GROUP_BTN_XPATH).click()
     driver.find_element(By.XPATH, Locators.DOWNLOAD_BTN_XPATH).click()
     time.sleep(3)
@@ -139,6 +154,11 @@ def check_credit_transactions(driver: WebDriver) -> None:
 
 @timeout_retry()
 def logout(driver: WebDriver) -> None:
+    """Performs logout for Web portal
+
+    Args:
+        driver (WebDriver): Firefox driver object
+    """
     driver.find_element(By.CLASS_NAME, Locators.LOGOUT_BTN_CLASS).click()
 
 

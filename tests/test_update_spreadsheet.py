@@ -27,13 +27,12 @@ def test_main(
     update_balance_spreadsheet.assert_called_once_with(mock_amount, mock_expenses)
 
 def test_load_amount(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    mock_amount: int = 1000
-    mock_amount_text: str = str(mock_amount)
+    mock_amount: str = "1000"
 
     monkeypatch.setattr("vigilant.constants.IOResources.DATA_PATH", tmp_path)
-    (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).write_text(mock_amount_text)
+    (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).write_text(mock_amount)
 
-    amount: int = update_spreadsheet.load_amount()
+    amount: str = update_spreadsheet.load_amount()
 
     assert amount == mock_amount
 
