@@ -9,9 +9,10 @@ from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 
+from vigilant import logger
 from vigilant.constants import Locators, Secrets, IOResources
 
-DEFAULT_TIMEOUT: Final[float] = 25.0
+DEFAULT_TIMEOUT: Final[float] = 10.0
 
 
 def main() -> None:
@@ -19,16 +20,16 @@ def main() -> None:
     with driver_session() as driver:
         clear_resources()
 
-        print("Logging in")
+        logger.info("Logging in ...")
         login(driver)
 
-        print("Getting current amount")
+        logger.info("Getting current amount ...")
         get_current_amount(driver)
 
-        print("Getting transactions")
+        logger.info("Getting transactions ...")
         get_credit_transactions(driver)
 
-        print("Logging out")
+        logger.info("Logging out ...")
         logout(driver)
 
 

@@ -6,6 +6,7 @@ import google.auth
 import pandas as pd
 from gspread import Spreadsheet, Worksheet
 
+from vigilant import logger
 from vigilant.constants import BalanceSpreadsheet, IOResources
 
 
@@ -13,6 +14,8 @@ def main() -> None:
     """Load expenses data into a google spreadsheet"""
     current_amount: int = load_amount()
     expenses_filepath: Path = find_expenses_file()
+
+    logger.info("Updating spreadsheet ...")
     expenses: list[list[Any]] = prepare_expenses(expenses_filepath)
 
     update_balance_spreadsheet(current_amount, expenses)
