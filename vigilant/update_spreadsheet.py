@@ -17,10 +17,13 @@ def main() -> None:
     update_balance_spreadsheet(current_amount, expenses)
 
 
-def load_amount() -> int:
-    return int(
-        (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).read_text()
-    )
+def load_amount() -> str:
+    """Loads amount from file
+
+    Returns:
+        str: Amount
+    """
+    return (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).read_text()
 
 
 def find_expenses_file() -> Path:
@@ -50,7 +53,7 @@ def prepare_expenses(expenses_filepath: Path) -> list[list[Any]]:
     return expenses.values.tolist()
 
 
-def update_balance_spreadsheet(account_amount: int, expenses: list[list[str]]) -> None:
+def update_balance_spreadsheet(account_amount: str, expenses: list[list[str]]) -> None:
     scopes: list[str] = [
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive",
