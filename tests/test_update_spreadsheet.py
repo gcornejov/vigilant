@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from vigilant import update_spreadsheet
-from vigilant import IOResources
+from vigilant.constants import IOResources
 
 
 @mock.patch("vigilant.update_spreadsheet.update_balance_spreadsheet")

@@ -1,10 +1,4 @@
-from vigilant.constants import BalanceSpreadsheet, IOResources, Locators, Secrets
-from vigilant.run import main as run
+from vigilant.log import build_logger
 
-__all__ = [
-    "run",
-    "BalanceSpreadsheet",
-    "IOResources",
-    "Locators",
-    "Secrets",
-]
+
+logger = build_logger()
