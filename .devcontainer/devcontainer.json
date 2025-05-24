@@ -16,7 +16,8 @@
         "ghcr.io/devcontainers-extra/features/zsh-plugins:0": {
             "plugins": "docker gcloud poetry zsh-autosuggestions zsh-syntax-highlighting fast-syntax-highlighting",
             "omzPlugins": "https://github.com/zsh-users/zsh-autosuggestions.git https://github.com/zsh-users/zsh-syntax-highlighting.git https://github.com/zdharma-continuum/fast-syntax-highlighting.git"
-        }
+        },
+        "./zsh-p10k": {}
     },
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
