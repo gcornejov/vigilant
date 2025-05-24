@@ -25,7 +25,7 @@ RUN wget -O chromedriver.zip https://storage.googleapis.com/chrome-for-testing-p
     cp chromedriver/chromedriver-linux64/chromedriver /usr/local/bin/ && \
     rm -r chromedriver chromedriver.zip
 
-RUN mkdir -p -m 511 /usr/var/vigilant
+RUN mkdir -p -m 777 /var/lib/vigilant
 
 COPY --from=build-deps /requirements.txt .
 RUN pip install -r requirements.txt
