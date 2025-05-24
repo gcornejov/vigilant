@@ -4,7 +4,8 @@
 
 ```shell
 gcloud auth application-default login \
-    --scopes=https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/spreadsheets,https://www.googleapis.com/auth/drive
+    --billing-project ${GCP_PROJECT_ID} \
+    --scopes https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/spreadsheets,https://www.googleapis.com/auth/drive
 ```
 
 ## Required environment variables
@@ -34,7 +35,7 @@ docker build -t vigilant .
 
 docker run --rm \
     --cpus 1 --memory 1024M -p 8080:8080 \
-    -v ./vigilant:/vigilant \
+    -v ${LOCAL_WORKSPACE_FOLDER}/vigilant:/vigilant \
     -e PORTAL_USERNAME=$PORTAL_USERNAME \
     -e PORTAL_PASSWORD=$PORTAL_PASSWORD \
     -e PORTAL_LOGIN_URL=$PORTAL_LOGIN_URL \
