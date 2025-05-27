@@ -72,10 +72,35 @@ def test_build_driver_options(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -
 def test_driver_session(mock_driver_class: mock.MagicMock) -> None:
     mock_driver_class.return_value = mock.MagicMock()
 
-    with data_collector.driver_session() as driver:
-        driver.maximize_window.assert_called_once()
+    with data_collector.driver_session() as driver: ...
 
+    driver.implicitly_wait.assert_called_once()
+    driver.maximize_window.assert_called_once()
     driver.quit.assert_called_once()
+
+
+@mock.patch("vigilant.data_collector.Chrome")
+@mock.patch("vigilant.data_collector.take_screenshot")
+def test_driver_session_exception(mock_driver_class: mock.MagicMock, take_screenshot: mock.MagicMock) -> None:
+    mock_driver_class.return_value = mock.MagicMock()
+
+    with pytest.raises(Exception):
+        with data_collector.driver_session() as driver:
+            raise Exception
+
+    take_screenshot.assert_called_once()
+    driver.quit.assert_called_once()
+
+
+def test_take_screenshot(tmp_path: Path, mock_driver: mock.MagicMock):
+    screenshot_filename: str = "test_sc.png"
+    screenshot_path: Path = tmp_path / screenshot_filename
+
+    mock_driver.get_screenshot_as_file = lambda _: screenshot_path.write_text("Hesitation is defeat!")
+
+    data_collector.take_screenshot(mock_driver)
+
+    assert screenshot_path.exists()
 
 
 def test_clear_resources(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
