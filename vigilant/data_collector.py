@@ -1,22 +1,24 @@
+import random
 import shutil
 import time
 from collections.abc import Callable, Generator
 from contextlib import contextmanager
-from functools import wraps
 from typing import Final
 
 from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.support.wait import WebDriverWait
 
 from vigilant import logger
 from vigilant.constants import Locators, Secrets, IOResources
 
-DEFAULT_TIMEOUT: Final[float] = 10.0
+DEFAULT_TIMEOUT: Final[float] = 15.0
+DEFAULT_DOWNLOAD_TIMEOUT: Final[float] = 3.0
 
 
 def main() -> None:
-    """Collect expenses data"""
+    """Collect account data"""
     with driver_session() as driver:
         clear_resources()
 
@@ -75,6 +77,7 @@ def driver_session() -> Generator[WebDriver]:
 
     driver = Chrome(options=options)
     try:
+        driver.implicitly_wait(DEFAULT_TIMEOUT)
         driver.maximize_window()
 
         yield driver
@@ -88,24 +91,8 @@ def clear_resources() -> None:
     IOResources.DATA_PATH.mkdir(parents=True, exist_ok=True)
 
 
-def timeout_retry(timeout: float | None = None) -> Callable:
-    def decorator(function: Callable) -> Callable:
-        @wraps(function)
-        def wrapper(*args, **kwargs):
-            remaining_time: float = timeout or DEFAULT_TIMEOUT
-            while remaining_time > 0:
-                start_time = time.time()
-                try:
-                    return function(*args, **kwargs)
-                except Exception:
-                    remaining_time -= time.time() - start_time
-            raise TimeoutError
-        return wrapper
-    return decorator
-
-
 def login(driver: WebDriver) -> None:
-    """Automate login to the user web portal
+    """Login to Web portal
 
     Args:
         driver (WebDriver): Chrome driver object
@@ -115,25 +102,7 @@ def login(driver: WebDriver) -> None:
     driver.find_element(By.ID, Locators.PASSWORD_INPUT_ID).send_keys(Secrets.PASSWORD)
     driver.find_element(By.ID, Locators.LOGIN_BTN_ID).click()
 
-    check_login(driver)
 
-@timeout_retry()
-def check_login(driver: WebDriver) -> None:
-    """Checks if the login completed successfully
-
-    Args:
-        driver (WebDriver): Chrome driver object
-
-    Raises:
-        Exception: Raised if the current URL doesn't match the Portal Home URL
-    """
-    if Secrets.HOME_URL in driver.current_url:
-        return
-
-    raise Exception
-
-
-@timeout_retry()
 def get_current_amount(driver: WebDriver) -> None:
     """Collect current account amount and save it in a file
 
@@ -151,29 +120,46 @@ def get_credit_transactions(driver: WebDriver) -> None:
         driver (WebDriver): Chrome driver object
     """
     driver.get(Secrets.CREDIT_TRANSACTIONS_URL)
-    check_credit_transactions(driver)
 
-
-@timeout_retry()
-def check_credit_transactions(driver: WebDriver) -> None:
-    """Try to download credit card transactions
-
-    Args:
-        driver (WebDriver): Chrome driver object
-    """
     driver.find_element(By.XPATH, Locators.GROUP_BTN_XPATH).click()
     driver.find_element(By.XPATH, Locators.DOWNLOAD_BTN_XPATH).click()
-    time.sleep(3)
+
+    check_condition_timeout(lambda: list(IOResources.DATA_PATH.glob("*.xls")), DEFAULT_DOWNLOAD_TIMEOUT)
 
 
-@timeout_retry()
 def logout(driver: WebDriver) -> None:
-    """Performs logout for Web portal
+    """Logout from Web portal
 
     Args:
         driver (WebDriver): Chrome driver object
     """
+    wait = WebDriverWait(driver, timeout=DEFAULT_TIMEOUT)
+    wait.until(lambda _: not driver.find_elements(By.CLASS_NAME, "snackbar-text"))
+
     driver.find_element(By.CLASS_NAME, Locators.LOGOUT_BTN_CLASS).click()
+
+
+def check_condition_timeout(condition: Callable, timeout: float) -> None:
+    """Evaluate until given condition is met or the timeout is exceeded 
+
+    Args:
+        condition (Callable): Function which evaluates the desired condition. (Expects to return True when the condition is met)
+        timeout (float): Limit time to wait (in seconds).
+
+    Raises:
+        TimeoutError: Condition wasn't met in the time frame
+    """    
+    remaining_time: float = timeout
+
+    while not condition():
+        attempt_time = time.time()
+
+        wait_sec: float = random.uniform(0.5, 1)
+        time.sleep(wait_sec)
+
+        remaining_time -= time.time() - attempt_time
+        if remaining_time <= 0:
+            raise TimeoutError
 
 
 if __name__ == "__main__":
