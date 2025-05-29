@@ -1,6 +1,6 @@
-import time
-from collections.abc import Generator
+from itertools import cycle
 from pathlib import Path
+from typing import Iterator
 from unittest import mock
 
 import pytest
@@ -92,51 +92,13 @@ def test_clear_resources(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Non
     )
 
 
-def test_timeout_retry() -> None:
-    numbers: Generator[int] = iter(range(2))
-
-    @data_collector.timeout_retry()
-    def dummy_divider() -> float:
-        d: int = next(numbers)
-
-        return 1/d
-
-    dummy_divider()
-
-
-def test_timeout_retry_exception() -> None:
-    numbers: Generator[int] = iter(range(2))
-
-    @data_collector.timeout_retry(0.1)
-    def dummy_divider() -> float:
-        time.sleep(0.3)
-        d: int = next(numbers)
-
-        return 1/d
-
-    with pytest.raises(TimeoutError):
-        dummy_divider()
-
-
-@mock.patch("vigilant.data_collector.check_login")
-def test_login(check_login: mock.MagicMock, mock_driver: mock.MagicMock) -> None:
+def test_login(mock_driver: mock.MagicMock) -> None:
     data_collector.login(mock_driver)
 
     mock_driver.get.assert_called_once()
     mock_driver.find_element.assert_called()
     mock_driver.find_element().send_keys.assert_called()
     mock_driver.find_element().click.assert_called_once()
-
-    check_login.assert_called_once()
-
-
-def test_check_login(monkeypatch: pytest.MonkeyPatch, mock_driver: mock.MagicMock) -> None:
-    mock_portal_home_url: str = "https://portal.home.com"
-
-    monkeypatch.setenv("PORTAL_HOME_URL", mock_portal_home_url)
-    mock_driver.current_url = mock_portal_home_url
-
-    data_collector.check_login(mock_driver)
 
 
 @mock.patch("vigilant.data_collector.DEFAULT_TIMEOUT", 0.3)
@@ -162,23 +124,43 @@ def test_get_current_amount(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, moc
     assert amount == mock_amount
 
 
-@mock.patch("vigilant.data_collector.check_credit_transactions")
-def test_get_credit_transactions(check_credit_transactions: mock.MagicMock, mock_driver: mock.MagicMock) -> None:
+def test_get_credit_transactions(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_driver: mock.MagicMock) -> None:
+    monkeypatch.setattr("vigilant.constants.IOResources.DATA_PATH", tmp_path)
+    (tmp_path / "file.xls").write_text("Heasitation is defeat!")
+
     data_collector.get_credit_transactions(mock_driver)
 
     mock_driver.get.assert_called_once()
-    check_credit_transactions.assert_called_once()
-
-
-def test_check_credit_transactions(mock_driver: mock.MagicMock) -> None:
-    data_collector.check_credit_transactions(mock_driver)
-
-    mock_driver.find_element.assert_called()
-    mock_driver.find_element().click.assert_called()
 
 
 def test_logout(mock_driver: mock.MagicMock) -> None:
+    mock_driver.find_elements.return_value = False
+
     data_collector.logout(mock_driver)
 
+    mock_driver.find_elements.assert_called()
     mock_driver.find_element.assert_called()
     mock_driver.find_element().click.assert_called()
+
+
+@mock.patch("vigilant.data_collector.DEFAULT_TIMEOUT", 0.1)
+def test_logout_timeout(mock_driver: mock.MagicMock) -> None:
+    with pytest.raises(Exception):
+        data_collector.logout(mock_driver)
+
+    mock_driver.find_elements.assert_called()
+
+
+def test_check_condition_timeout() -> None:
+    binary_values: Iterator[str] = cycle((0, 1))
+    mock_timeout: float = 3.0
+
+    data_collector.check_condition_timeout(lambda: next(binary_values), mock_timeout)
+
+
+def test_check_condition_timeout_not_met() -> None:
+    binary_values: Iterator[str] = cycle((0, 1))
+    mock_timeout: float = 0.1
+
+    with pytest.raises(TimeoutError):
+        data_collector.check_condition_timeout(lambda: next(binary_values), mock_timeout)
