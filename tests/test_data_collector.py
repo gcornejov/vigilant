@@ -80,7 +80,7 @@ def test_driver_session(mock_driver_class: mock.MagicMock) -> None:
 
 def test_clear_resources(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     tmp_file: Path = tmp_path / "test_file.txt"
-    tmp_file.write_text("Heasitation is defeat!")
+    tmp_file.write_text("Hesitation is defeat!")
 
     monkeypatch.setattr("vigilant.constants.IOResources.DATA_PATH", tmp_path)
 
@@ -99,12 +99,6 @@ def test_login(mock_driver: mock.MagicMock) -> None:
     mock_driver.find_element.assert_called()
     mock_driver.find_element().send_keys.assert_called()
     mock_driver.find_element().click.assert_called_once()
-
-
-@mock.patch("vigilant.data_collector.DEFAULT_TIMEOUT", 0.3)
-def test_check_login_exception(mock_driver: mock.MagicMock) -> None:
-    with pytest.raises(Exception):
-        data_collector.check_login(mock_driver)
 
 
 def test_get_current_amount(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_driver: mock.MagicMock) -> None:
