@@ -1,5 +1,6 @@
 import random
 import shutil
+import tempfile
 import time
 from collections.abc import Callable, Generator
 from contextlib import contextmanager
@@ -81,9 +82,27 @@ def driver_session() -> Generator[WebDriver]:
         driver.maximize_window()
 
         yield driver
+    except Exception as e:
+        logger.error(e)
+        logger.error(type(e))
+
+        take_screenshot(driver)
+
+        raise Exception
     finally:
         driver.quit()
 
+
+def take_screenshot(driver: Chrome) -> None:
+    """Takes a screenshot of the browser window and saves it in a tmp file.
+
+    Args:
+        driver (Chrome): Chrome driver object
+    """
+    screenshot_path: str = tempfile.mktemp(suffix=".png")
+    driver.get_screenshot_as_file(screenshot_path)
+
+    logger.info(f"\N{camera} Browser screenshot saved at: {screenshot_path}")
 
 def clear_resources() -> None:
     """Setup resources directory for data persistence"""
