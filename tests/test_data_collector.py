@@ -75,7 +75,7 @@ def test_driver_session(mock_driver_class: mock.MagicMock) -> None:
     with data_collector.driver_session() as driver: ...
 
     driver.implicitly_wait.assert_called_once()
-    driver.maximize_window.assert_called_once()
+    driver.set_window_size.assert_called_once_with(1920, 1080)
     driver.quit.assert_called_once()
 
 

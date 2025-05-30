@@ -79,7 +79,7 @@ def driver_session() -> Generator[WebDriver]:
     driver = Chrome(options=options)
     try:
         driver.implicitly_wait(DEFAULT_TIMEOUT)
-        driver.maximize_window()
+        driver.set_window_size(1920, 1080)
 
         yield driver
     except Exception as e:
