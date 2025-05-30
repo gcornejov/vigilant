@@ -44,6 +44,8 @@ docker build -t vigilant .
 
 docker run --rm \
     --cpus 1 --memory 1024M -p 8080:8080 \
+    -v /tmp:/tmp \
+    -v ${HOME}/.config/gcloud:/root/.config/gcloud \
     -v ${LOCAL_WORKSPACE_FOLDER}/vigilant:/vigilant \
     -e PORTAL_USERNAME=$PORTAL_USERNAME \
     -e PORTAL_PASSWORD=$PORTAL_PASSWORD \
