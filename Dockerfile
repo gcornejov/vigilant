@@ -9,9 +9,7 @@ RUN poetry export -o /requirements.txt --without-hashes --without-urls
 
 FROM python:3.12-slim AS build-service
 
-ARG CHROMEDRIVER_VERSION=136.0.7103.92
-
-RUN apt update && apt upgrade
+RUN apt update -y && apt upgrade -y
 RUN DEBIAN_FRONTEND=noninteractive apt install -y wget unzip fonts-liberation libnspr4 libnss3 xdg-utils \
     libasound2 libatk-bridge2.0-0 libatk1.0-0 libatspi2.0-0 libcairo2 libcups2 libcurl3-gnutls libcurl3-nss \
     libcurl4 libgtk-3-0 libgtk-4-1 libpango-1.0-0 libvulkan1 libxdamage1 libxkbcommon0
@@ -20,7 +18,8 @@ RUN wget -O google-chrome.deb https://dl.google.com/linux/direct/google-chrome-s
     dpkg -i google-chrome.deb && \
     rm google-chrome.deb
 
-RUN wget -O chromedriver.zip https://storage.googleapis.com/chrome-for-testing-public/${CHROMEDRIVER_VERSION}/linux64/chromedriver-linux64.zip && \
+RUN CHROME_VERSION=$(echo "$(google-chrome --version)" | awk '{print $NF}') && \
+    wget -O chromedriver.zip https://storage.googleapis.com/chrome-for-testing-public/${CHROME_VERSION}/linux64/chromedriver-linux64.zip && \
     unzip chromedriver.zip -d chromedriver && \
     cp chromedriver/chromedriver-linux64/chromedriver /usr/local/bin/ && \
     rm -r chromedriver chromedriver.zip

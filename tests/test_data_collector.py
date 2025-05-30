@@ -75,7 +75,7 @@ def test_driver_session(mock_driver_class: mock.MagicMock) -> None:
     with data_collector.driver_session() as driver: ...
 
     driver.implicitly_wait.assert_called_once()
-    driver.maximize_window.assert_called_once()
+    driver.set_window_size.assert_called_once_with(1920, 1080)
     driver.quit.assert_called_once()
 
 
@@ -126,20 +126,30 @@ def test_login(mock_driver: mock.MagicMock) -> None:
     mock_driver.find_element().click.assert_called_once()
 
 
-def test_get_current_amount(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_driver: mock.MagicMock) -> None:
+@pytest.mark.parametrize(
+    "found_elements",
+    (
+        ([]),
+        (["banner"])
+    ),
+)
+def test_get_current_amount(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_driver: mock.MagicMock, found_elements: list[str]) -> None:
     mock_formatted_amount: str = " $1.000"
     mock_amount: str = "1000"
 
     mock_element = mock.MagicMock()
     mock_element.text = mock_formatted_amount
-    mock_driver.find_element = mock.MagicMock(return_value=mock_element)
+    mock_driver.find_element.return_value = mock_element
+
+    mock_driver.find_elements.return_value = found_elements
 
     monkeypatch.setattr("vigilant.constants.IOResources.DATA_PATH", tmp_path)
 
     data_collector.get_current_amount(mock_driver)
     amount: str = (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).read_text()
 
-    mock_driver.find_element.assert_called_once()
+    mock_driver.find_elements.assert_called_once()
+    mock_driver.find_element.assert_called()
     assert amount == mock_amount
 
 

@@ -79,7 +79,7 @@ def driver_session() -> Generator[WebDriver]:
     driver = Chrome(options=options)
     try:
         driver.implicitly_wait(DEFAULT_TIMEOUT)
-        driver.maximize_window()
+        driver.set_window_size(1920, 1080)
 
         yield driver
     except Exception as e:
@@ -128,6 +128,9 @@ def get_current_amount(driver: WebDriver) -> None:
     Args:
         driver (WebDriver): Chrome driver object
     """
+    if driver.find_elements(By.CLASS_NAME, Locators.PROMOTION_BANNER_CLASS):
+        driver.find_element(By.XPATH, Locators.BANNER_CLOSE_BTN_XPATH).click()
+
     account_amount: str = driver.find_element(By.CLASS_NAME, Locators.AMOUNT_TEXT_CLASS).text
     (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).write_text(account_amount.replace(".", "").replace("$", "").strip())
 
@@ -140,7 +143,7 @@ def get_credit_transactions(driver: WebDriver) -> None:
     """
     driver.get(Secrets.CREDIT_TRANSACTIONS_URL)
 
-    driver.find_element(By.XPATH, Locators.GROUP_BTN_XPATH).click()
+    driver.find_element(By.XPATH, Locators.DOWNLOAD_GROUP_BTN_XPATH).click()
     driver.find_element(By.XPATH, Locators.DOWNLOAD_BTN_XPATH).click()
 
     check_condition_timeout(lambda: list(IOResources.DATA_PATH.glob("*.xls")), DEFAULT_DOWNLOAD_TIMEOUT)
@@ -153,7 +156,7 @@ def logout(driver: WebDriver) -> None:
         driver (WebDriver): Chrome driver object
     """
     wait = WebDriverWait(driver, timeout=DEFAULT_TIMEOUT)
-    wait.until(lambda _: not driver.find_elements(By.CLASS_NAME, "snackbar-text"))
+    wait.until(lambda _: not driver.find_elements(By.CLASS_NAME, Locators.DOWNLOAD_TOAST_CLASS))
 
     driver.find_element(By.CLASS_NAME, Locators.LOGOUT_BTN_CLASS).click()
 

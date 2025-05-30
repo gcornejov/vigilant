@@ -28,10 +28,13 @@ class Locators:
     PASSWORD_INPUT_ID: Final[str] = "ppriv_per-click-input-password"
     LOGIN_BTN_ID: Final[str] = "ppriv_per-click-ingresar-login"
 
+    PROMOTION_BANNER_CLASS: Final[str] = "fondo"
     AMOUNT_TEXT_CLASS: Final[str] = "monto-cuenta"
+    DOWNLOAD_TOAST_CLASS: Final[str] = "snackbar-text"
     LOGOUT_BTN_CLASS: Final[str] = "button-logout"
 
-    GROUP_BTN_XPATH: Final[str] = (
+    BANNER_CLOSE_BTN_XPATH: Final[str] = '//*[@id="mat-dialog-0"]/fenix-modal-zona-emergente/div/div/div/button'
+    DOWNLOAD_GROUP_BTN_XPATH: Final[str] = (
         '//*[@id="mat-tab-content-1-0"]/div/fenix-movimientos-no-facturados-tabla/div[1]/div[1]/div[2]/bch-button/div/button'
     )
     DOWNLOAD_BTN_XPATH: Final[str] = '//*[@id="cdk-overlay-0"]/div/div/button[1]'
