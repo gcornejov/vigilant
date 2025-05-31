@@ -51,23 +51,30 @@ def test_find_expenses_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
     )
 
 
-def test_prepare_expenses(monkeypatch: pytest.MonkeyPatch) -> None:
+@mock.patch("vigilant.update_spreadsheet.pd.read_excel")
+def test_prepare_expenses(mock_pd_read_excel: mock.MagicMock) -> None:
+    mock_path = Path("/")
+    mock_cols_keys: tuple[str] = ("date", "description", "location", "amount")
+    mock_cols_index: tuple[str] = (1, 4, 6, 10)
+
     mock_data: list[list[Any]] = [
         ["1999/12/31", "Clothes", "Santiago", 25000],
-        ["1999/12/04", "TEF PAGO NORMAL", "Santiago", 120000],
+        ["1999/12/04", "TEF PAGO NORMAL", "Santiago", -120000],
         ["1999/12/24", "Food", None, 40000],
+        ["1999/12/04", "Pago Pesos TAR", "Santiago", -88000],
     ]
-    mock_data_df = pd.DataFrame(mock_data, columns=("date", "description", "location", "amount"))
+    mock_data_df = pd.DataFrame(mock_data, columns=mock_cols_keys)
 
     mock_expenses: list[list[Any]] = [
         ["1999/12/31", "Clothes", "Santiago", 25000],
         ["1999/12/24", "Food", "", 40000],
     ]
 
-    monkeypatch.setattr("vigilant.update_spreadsheet.pd.read_excel", lambda *args, **kwargs: mock_data_df)
+    mock_pd_read_excel.return_value = mock_data_df
 
-    expenses: list[list[Any]] = update_spreadsheet.prepare_expenses(Path("/"))
+    expenses: list[list[Any]] = update_spreadsheet.prepare_expenses(mock_path)
     
+    mock_pd_read_excel.assert_called_once_with(Path("/"), sheet_name=0, header=17, names=mock_cols_keys, usecols=mock_cols_index)
     assert expenses == mock_expenses
 
 

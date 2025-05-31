@@ -12,7 +12,7 @@ from vigilant.constants import BalanceSpreadsheet, IOResources
 
 def main() -> None:
     """Load expenses data into a google spreadsheet"""
-    current_amount: int = load_amount()
+    current_amount: str = load_amount()
     expenses_filepath: Path = find_expenses_file()
 
     logger.info("Updating spreadsheet ...")
@@ -52,7 +52,7 @@ def prepare_expenses(expenses_filepath: Path) -> list[list[str]]:
     """
     EXPENSES_COLUMNS_INDEX: tuple[str] = (1, 4, 6, 10)
     EXPENSES_COLUMNS_KEYS: tuple[str] = ("date", "description", "location", "amount")
-    CARD_PAYMENT_DESC: Final[str] = "TEF PAGO NORMAL"
+    CARD_PAYMENT_DESC: Final[tuple[str]] = ("TEF PAGO NORMAL", "Pago Pesos TAR")
 
     expenses: pd.DataFrame = pd.read_excel(
         expenses_filepath,
@@ -63,7 +63,7 @@ def prepare_expenses(expenses_filepath: Path) -> list[list[str]]:
     )
 
     expenses = expenses[
-        (~ expenses.description.str.contains(CARD_PAYMENT_DESC))
+        (~ expenses.description.isin(CARD_PAYMENT_DESC))
     ] \
     .fillna("")
 
