@@ -52,7 +52,7 @@ def prepare_expenses(expenses_filepath: Path) -> list[list[str]]:
     """
     EXPENSES_COLUMNS_INDEX: tuple[str] = (1, 4, 6, 10)
     EXPENSES_COLUMNS_KEYS: tuple[str] = ("date", "description", "location", "amount")
-    CARD_PAYMENT_DESC: Final[tuple[str]] = ("TEF PAGO NORMAL", "Pago Pesos TAR")
+    CARD_PAYMENT_DESC: Final[tuple[str]] = ("TEF PAGO NORMAL", "Pago Pesos TAR", "Pago Pesos TEF PAGO NORMAL")
 
     expenses: pd.DataFrame = pd.read_excel(
         expenses_filepath,
