@@ -156,7 +156,7 @@ def logout(driver: WebDriver) -> None:
         driver (WebDriver): Chrome driver object
     """
     wait = WebDriverWait(driver, timeout=DEFAULT_TIMEOUT)
-    wait.until(lambda _: not driver.find_elements(By.CLASS_NAME, Locators.DOWNLOAD_TOAST_CLASS))
+    wait.until_not(lambda _: driver.find_elements(By.CLASS_NAME, Locators.DOWNLOAD_TOAST_CLASS))
 
     driver.find_element(By.CLASS_NAME, Locators.LOGOUT_BTN_CLASS).click()
 
