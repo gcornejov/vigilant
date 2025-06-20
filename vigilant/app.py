@@ -1,8 +1,8 @@
-import traceback
-
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 
 from vigilant.run import main as run
+from vigilant.common.exceptions import VigilantException
 
 app = FastAPI()
 
@@ -18,5 +18,5 @@ def update_expenses() -> str:
     try:
         run()
         return "Ok"
-    except Exception:
-        return f"Nok:\n{traceback.format_exc()}"
+    except VigilantException as e:
+        return JSONResponse(status_code=500, content={"details": str(e)})

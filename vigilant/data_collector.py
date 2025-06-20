@@ -6,6 +6,7 @@ from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from typing import Final
 
+from selenium.common.exceptions import WebDriverException
 from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -13,6 +14,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 from vigilant import logger
 from vigilant.constants import Locators, Secrets, IOResources
+from vigilant.common.exceptions import DriverException, DownloadTimeout 
 
 DEFAULT_TIMEOUT: Final[float] = 15.0
 DEFAULT_DOWNLOAD_TIMEOUT: Final[float] = 3.0
@@ -82,18 +84,16 @@ def driver_session() -> Generator[WebDriver]:
         driver.set_window_size(1920, 1080)
 
         yield driver
-    except Exception as e:
-        logger.error(e)
-        logger.error(type(e))
+    except WebDriverException as e:
+        logger.exception(e)
+        screenshot_path: str = take_screenshot(driver)
 
-        take_screenshot(driver)
-
-        raise Exception
+        raise DriverException(screenshot_path)
     finally:
         driver.quit()
 
 
-def take_screenshot(driver: Chrome) -> None:
+def take_screenshot(driver: Chrome) -> str:
     """Takes a screenshot of the browser window and saves it in a tmp file.
 
     Args:
@@ -103,6 +103,7 @@ def take_screenshot(driver: Chrome) -> None:
     driver.get_screenshot_as_file(screenshot_path)
 
     logger.info(f"\N{camera} Browser screenshot saved at: {screenshot_path}")
+    return screenshot_path
 
 def clear_resources() -> None:
     """Setup resources directory for data persistence"""
@@ -146,7 +147,10 @@ def get_credit_transactions(driver: WebDriver) -> None:
     driver.find_element(By.XPATH, Locators.DOWNLOAD_GROUP_BTN_XPATH).click()
     driver.find_element(By.XPATH, Locators.DOWNLOAD_BTN_XPATH).click()
 
-    check_condition_timeout(lambda: list(IOResources.DATA_PATH.glob("*.xls")), DEFAULT_DOWNLOAD_TIMEOUT)
+    try:
+        check_condition_timeout(lambda: list(IOResources.DATA_PATH.glob("*.xls")), DEFAULT_DOWNLOAD_TIMEOUT)
+    except TimeoutError:
+        raise DownloadTimeout(DEFAULT_DOWNLOAD_TIMEOUT)
 
 
 def logout(driver: WebDriver) -> None:

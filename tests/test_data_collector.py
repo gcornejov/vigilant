@@ -4,10 +4,12 @@ from typing import Iterator
 from unittest import mock
 
 import pytest
+from selenium.common.exceptions import WebDriverException
 from selenium.webdriver import ChromeOptions
 
 from vigilant import data_collector
 from vigilant.constants import IOResources
+from vigilant.common.exceptions import DriverException, DownloadTimeout
 
 
 @pytest.fixture
@@ -84,9 +86,9 @@ def test_driver_session(mock_driver_class: mock.MagicMock) -> None:
 def test_driver_session_exception(mock_driver_class: mock.MagicMock, take_screenshot: mock.MagicMock) -> None:
     mock_driver_class.return_value = mock.MagicMock()
 
-    with pytest.raises(Exception):
+    with pytest.raises(DriverException):
         with data_collector.driver_session() as driver:
-            raise Exception
+            raise WebDriverException
 
     take_screenshot.assert_called_once()
     driver.quit.assert_called_once()
@@ -160,6 +162,12 @@ def test_get_credit_transactions(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     data_collector.get_credit_transactions(mock_driver)
 
     mock_driver.get.assert_called_once()
+
+
+@mock.patch("vigilant.data_collector.check_condition_timeout", mock.Mock(side_effect=TimeoutError))
+def test_get_credit_transactions_exception(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_driver: mock.MagicMock) -> None:
+    with pytest.raises(DownloadTimeout):
+        data_collector.get_credit_transactions(mock_driver)
 
 
 def test_logout(mock_driver: mock.MagicMock) -> None:
