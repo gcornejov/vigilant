@@ -13,7 +13,7 @@ from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support.wait import WebDriverWait
 
 from vigilant import logger
-from vigilant.constants import Locators, Secrets, IOResources
+from vigilant.common.constants import Locators, Secrets, IOResources
 from vigilant.common.exceptions import DriverException, DownloadTimeout 
 
 DEFAULT_TIMEOUT: Final[float] = 15.0

@@ -3,10 +3,10 @@ from unittest import mock
 
 import pytest
 
-from vigilant import log
+from vigilant.common import log
 
 
-@mock.patch("vigilant.log._get_loglevel")
+@mock.patch("vigilant.common.log._get_loglevel")
 def test_build_logger(mock_get_loglevel: mock.MagicMock) -> None:
     mock_loglevel: int = 10
     mock_get_loglevel.return_value = mock_loglevel
