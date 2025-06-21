@@ -17,9 +17,6 @@
         "ghcr.io/gcornejov/devex/zsh-p10k:0": {}
     },
 
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
-    
     "remoteEnv": {
         "LOCAL_WORKSPACE_FOLDER": "${localWorkspaceFolder}"
     },
@@ -30,6 +27,7 @@
 	// Use 'postCreateCommand' to run commands after the container is created.
 	"postCreateCommand": {
         "app-dir": "APP_DIR=/var/lib/vigilant; sudo mkdir -p -m 777 ${APP_DIR} && sudo chown -R ${USER}:${USER} ${APP_DIR}",
+        "debian-pkgs": "sudo apt update -y && sudo apt upgrade -y && sudo apt install -y xclip",
         "poetry": "poetry install -vv"
     },
 
@@ -51,7 +49,8 @@
                 "davidanson.vscode-markdownlint",
                 "mutantdino.resourcemonitor",
                 "charliermarsh.ruff",
-                "eamodio.gitlens"
+                "eamodio.gitlens",
+                "rid9.datetime"
             ],
             "settings": {
                 "python.defaultInterpreterPath": ".venv/bin/activate",
@@ -66,7 +65,4 @@
     "runArgs": [
         "--env-file", "${localWorkspaceFolder}/.env"
     ]
-
-	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "root"
 }

@@ -4,10 +4,12 @@ from typing import Iterator
 from unittest import mock
 
 import pytest
+from selenium.common.exceptions import WebDriverException
 from selenium.webdriver import ChromeOptions
 
 from vigilant import data_collector
-from vigilant.constants import IOResources
+from vigilant.common.constants import IOResources
+from vigilant.common.exceptions import DriverException, DownloadTimeout
 
 
 @pytest.fixture
@@ -58,7 +60,7 @@ def test_build_driver_options(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -
         "--disable-software-rasterizer",
     ]
 
-    monkeypatch.setattr("vigilant.constants.IOResources.DATA_PATH", tmp_path)
+    monkeypatch.setattr("vigilant.common.constants.IOResources.DATA_PATH", tmp_path)
 
     options = data_collector.build_driver_options()
     preferences = options.experimental_options["prefs"].items()
@@ -84,9 +86,9 @@ def test_driver_session(mock_driver_class: mock.MagicMock) -> None:
 def test_driver_session_exception(mock_driver_class: mock.MagicMock, take_screenshot: mock.MagicMock) -> None:
     mock_driver_class.return_value = mock.MagicMock()
 
-    with pytest.raises(Exception):
+    with pytest.raises(DriverException):
         with data_collector.driver_session() as driver:
-            raise Exception
+            raise WebDriverException
 
     take_screenshot.assert_called_once()
     driver.quit.assert_called_once()
@@ -107,7 +109,7 @@ def test_clear_resources(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Non
     tmp_file: Path = tmp_path / "test_file.txt"
     tmp_file.write_text("Hesitation is defeat!")
 
-    monkeypatch.setattr("vigilant.constants.IOResources.DATA_PATH", tmp_path)
+    monkeypatch.setattr("vigilant.common.constants.IOResources.DATA_PATH", tmp_path)
 
     data_collector.clear_resources()
 
@@ -143,7 +145,7 @@ def test_get_current_amount(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, moc
 
     mock_driver.find_elements.return_value = found_elements
 
-    monkeypatch.setattr("vigilant.constants.IOResources.DATA_PATH", tmp_path)
+    monkeypatch.setattr("vigilant.common.constants.IOResources.DATA_PATH", tmp_path)
 
     data_collector.get_current_amount(mock_driver)
     amount: str = (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).read_text()
@@ -154,12 +156,18 @@ def test_get_current_amount(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, moc
 
 
 def test_get_credit_transactions(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_driver: mock.MagicMock) -> None:
-    monkeypatch.setattr("vigilant.constants.IOResources.DATA_PATH", tmp_path)
+    monkeypatch.setattr("vigilant.common.constants.IOResources.DATA_PATH", tmp_path)
     (tmp_path / "file.xls").write_text("Heasitation is defeat!")
 
     data_collector.get_credit_transactions(mock_driver)
 
     mock_driver.get.assert_called_once()
+
+
+@mock.patch("vigilant.data_collector.check_condition_timeout", mock.Mock(side_effect=TimeoutError))
+def test_get_credit_transactions_exception(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_driver: mock.MagicMock) -> None:
+    with pytest.raises(DownloadTimeout):
+        data_collector.get_credit_transactions(mock_driver)
 
 
 def test_logout(mock_driver: mock.MagicMock) -> None:

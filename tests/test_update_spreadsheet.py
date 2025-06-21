@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from vigilant import update_spreadsheet
-from vigilant.constants import IOResources
+from vigilant.common.constants import IOResources
 
 
 @mock.patch("vigilant.update_spreadsheet.update_balance_spreadsheet")
@@ -29,7 +29,7 @@ def test_main(
 def test_load_amount(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     mock_amount: str = "1000"
 
-    monkeypatch.setattr("vigilant.constants.IOResources.DATA_PATH", tmp_path)
+    monkeypatch.setattr("vigilant.common.constants.IOResources.DATA_PATH", tmp_path)
     (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).write_text(mock_amount)
 
     amount: str = update_spreadsheet.load_amount()
@@ -40,7 +40,7 @@ def test_load_amount(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 def test_find_expenses_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     mock_expenses_file: str = "mock.xls"
 
-    monkeypatch.setattr("vigilant.constants.IOResources.DATA_PATH", tmp_path)
+    monkeypatch.setattr("vigilant.common.constants.IOResources.DATA_PATH", tmp_path)
     (tmp_path / mock_expenses_file).write_text("")
 
     expenses_file: Path = update_spreadsheet.find_expenses_file()
