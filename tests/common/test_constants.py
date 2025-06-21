@@ -3,6 +3,7 @@ from typing import Final
 
 from vigilant.common.constants import MetaSecrets
 
+
 def test_secrets_metaclass() -> None:
     os.environ["ENV_TEST"] = "test_value"
 

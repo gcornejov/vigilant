@@ -2,6 +2,7 @@ from unittest import mock
 
 from vigilant import run
 
+
 @mock.patch("vigilant.run.data_collector")
 @mock.patch("vigilant.run.update_spreadsheet")
 def test_main(

@@ -33,7 +33,9 @@ class Locators:
     DOWNLOAD_TOAST_CLASS: Final[str] = "snackbar-text"
     LOGOUT_BTN_CLASS: Final[str] = "button-logout"
 
-    BANNER_CLOSE_BTN_XPATH: Final[str] = '//*[@id="mat-dialog-0"]/fenix-modal-zona-emergente/div/div/div/button'
+    BANNER_CLOSE_BTN_XPATH: Final[str] = (
+        '//*[@id="mat-dialog-0"]/fenix-modal-zona-emergente/div/div/div/button'
+    )
     DOWNLOAD_GROUP_BTN_XPATH: Final[str] = (
         '//*[@id="mat-tab-content-1-0"]/div/fenix-movimientos-no-facturados-tabla/div[1]/div[1]/div[2]/bch-button/div/button'
     )
