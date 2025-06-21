@@ -4,8 +4,8 @@
     <a href="https://www.python.org/doc/versions/" target="_blank">
         <img alt="Python Version from PEP 621 TOML" src="https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fgcornejov%2Fvigilant%2Fmain%2Fpyproject.toml&logo=Python&labelColor=ffde57&color=4584b6" alt="Python version">
     </a>
-    <a href="https://codecov.io/gh/gcornejov/vigilant" > 
-        <img src="https://codecov.io/gh/gcornejov/vigilant/graph/badge.svg?token=VIWE3BIDB3" alt="Code coverage"/> 
+    <a href="https://codecov.io/gh/gcornejov/vigilant">
+        <img src="https://codecov.io/gh/gcornejov/vigilant/graph/badge.svg?token=VIWE3BIDB3" alt="Code coverage"/>
     </a>
 </p>
 
