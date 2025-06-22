@@ -9,12 +9,13 @@ from selenium.webdriver import ChromeOptions
 
 from vigilant import data_collector
 from vigilant.common.constants import IOResources
-from vigilant.common.exceptions import DriverException, DownloadTimeout
+from vigilant.common.exceptions import DownloadTimeout, DriverException
 
 
 @pytest.fixture
 def mock_driver():
     return mock.MagicMock()
+
 
 @mock.patch("vigilant.data_collector.driver_session")
 @mock.patch("vigilant.data_collector.clear_resources")
@@ -74,7 +75,8 @@ def test_build_driver_options(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -
 def test_driver_session(mock_driver_class: mock.MagicMock) -> None:
     mock_driver_class.return_value = mock.MagicMock()
 
-    with data_collector.driver_session() as driver: ...
+    with data_collector.driver_session() as driver:
+        ...
 
     driver.implicitly_wait.assert_called_once()
     driver.set_window_size.assert_called_once_with(1920, 1080)
@@ -83,7 +85,9 @@ def test_driver_session(mock_driver_class: mock.MagicMock) -> None:
 
 @mock.patch("vigilant.data_collector.Chrome")
 @mock.patch("vigilant.data_collector.take_screenshot")
-def test_driver_session_exception(mock_driver_class: mock.MagicMock, take_screenshot: mock.MagicMock) -> None:
+def test_driver_session_exception(
+    mock_driver_class: mock.MagicMock, take_screenshot: mock.MagicMock
+) -> None:
     mock_driver_class.return_value = mock.MagicMock()
 
     with pytest.raises(DriverException):
@@ -98,7 +102,9 @@ def test_take_screenshot(tmp_path: Path, mock_driver: mock.MagicMock):
     screenshot_filename: str = "test_sc.png"
     screenshot_path: Path = tmp_path / screenshot_filename
 
-    mock_driver.get_screenshot_as_file = lambda _: screenshot_path.write_text("Hesitation is defeat!")
+    mock_driver.get_screenshot_as_file = lambda _: screenshot_path.write_text(
+        "Hesitation is defeat!"
+    )
 
     data_collector.take_screenshot(mock_driver)
 
@@ -113,10 +119,7 @@ def test_clear_resources(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Non
 
     data_collector.clear_resources()
 
-    assert (
-        tmp_path.exists()
-        and not any(tmp_path.iterdir())
-    )
+    assert tmp_path.exists() and not any(tmp_path.iterdir())
 
 
 def test_login(mock_driver: mock.MagicMock) -> None:
@@ -130,12 +133,14 @@ def test_login(mock_driver: mock.MagicMock) -> None:
 
 @pytest.mark.parametrize(
     "found_elements",
-    (
-        ([]),
-        (["banner"])
-    ),
+    (([]), (["banner"])),
 )
-def test_get_current_amount(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_driver: mock.MagicMock, found_elements: list[str]) -> None:
+def test_get_current_amount(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mock_driver: mock.MagicMock,
+    found_elements: list[str],
+) -> None:
     mock_formatted_amount: str = " $1.000"
     mock_amount: str = "1000"
 
@@ -155,7 +160,9 @@ def test_get_current_amount(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, moc
     assert amount == mock_amount
 
 
-def test_get_credit_transactions(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_driver: mock.MagicMock) -> None:
+def test_get_credit_transactions(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_driver: mock.MagicMock
+) -> None:
     monkeypatch.setattr("vigilant.common.constants.IOResources.DATA_PATH", tmp_path)
     (tmp_path / "file.xls").write_text("Heasitation is defeat!")
 
@@ -164,8 +171,13 @@ def test_get_credit_transactions(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     mock_driver.get.assert_called_once()
 
 
-@mock.patch("vigilant.data_collector.check_condition_timeout", mock.Mock(side_effect=TimeoutError))
-def test_get_credit_transactions_exception(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_driver: mock.MagicMock) -> None:
+@mock.patch(
+    "vigilant.data_collector.check_condition_timeout",
+    mock.Mock(side_effect=TimeoutError),
+)
+def test_get_credit_transactions_exception(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_driver: mock.MagicMock
+) -> None:
     with pytest.raises(DownloadTimeout):
         data_collector.get_credit_transactions(mock_driver)
 
@@ -200,4 +212,6 @@ def test_check_condition_timeout_not_met() -> None:
     mock_timeout: float = 0.1
 
     with pytest.raises(TimeoutError):
-        data_collector.check_condition_timeout(lambda: next(binary_values), mock_timeout)
+        data_collector.check_condition_timeout(
+            lambda: next(binary_values), mock_timeout
+        )

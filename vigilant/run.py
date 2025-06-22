@@ -1,5 +1,4 @@
-from vigilant import logger
-from vigilant import data_collector, update_spreadsheet
+from vigilant import data_collector, logger, update_spreadsheet
 
 
 def main():

@@ -19,12 +19,17 @@ def test_main(
     mock_expenses: list[list[Any]] = [["store", 100]]
 
     monkeypatch.setattr("vigilant.update_spreadsheet.load_amount", lambda: mock_amount)
-    monkeypatch.setattr("vigilant.update_spreadsheet.find_expenses_file", lambda: mock_expenses_filepath)
-    monkeypatch.setattr("vigilant.update_spreadsheet.prepare_expenses", lambda _: mock_expenses)
+    monkeypatch.setattr(
+        "vigilant.update_spreadsheet.find_expenses_file", lambda: mock_expenses_filepath
+    )
+    monkeypatch.setattr(
+        "vigilant.update_spreadsheet.prepare_expenses", lambda _: mock_expenses
+    )
 
     update_spreadsheet.main()
 
     update_balance_spreadsheet.assert_called_once_with(mock_amount, mock_expenses)
+
 
 def test_load_amount(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     mock_amount: str = "1000"
@@ -45,10 +50,7 @@ def test_find_expenses_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
 
     expenses_file: Path = update_spreadsheet.find_expenses_file()
 
-    assert (
-        isinstance(expenses_file, Path) and
-        expenses_file.name == mock_expenses_file
-    )
+    assert isinstance(expenses_file, Path) and expenses_file.name == mock_expenses_file
 
 
 @mock.patch("vigilant.update_spreadsheet.pd.read_excel")
@@ -73,14 +75,22 @@ def test_prepare_expenses(mock_pd_read_excel: mock.MagicMock) -> None:
     mock_pd_read_excel.return_value = mock_data_df
 
     expenses: list[list[Any]] = update_spreadsheet.prepare_expenses(mock_path)
-    
-    mock_pd_read_excel.assert_called_once_with(Path("/"), sheet_name=0, header=17, names=mock_cols_keys, usecols=mock_cols_index)
+
+    mock_pd_read_excel.assert_called_once_with(
+        Path("/"),
+        sheet_name=0,
+        header=17,
+        names=mock_cols_keys,
+        usecols=mock_cols_index,
+    )
     assert expenses == mock_expenses
 
 
 @mock.patch("vigilant.update_spreadsheet.google.auth")
 @mock.patch("vigilant.update_spreadsheet.gspread")
-def test_update_balance_spreadsheet(mock_gspread: mock.MagicMock, mock_google_auth: mock.MagicMock) -> None:
+def test_update_balance_spreadsheet(
+    mock_gspread: mock.MagicMock, mock_google_auth: mock.MagicMock
+) -> None:
     mock_google_auth.default.return_value = ("A", "B")
 
     update_spreadsheet.update_balance_spreadsheet(0, [[]])

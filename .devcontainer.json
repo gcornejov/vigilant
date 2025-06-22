@@ -28,7 +28,7 @@
 	"postCreateCommand": {
         "app-dir": "APP_DIR=/var/lib/vigilant; sudo mkdir -p -m 777 ${APP_DIR} && sudo chown -R ${USER}:${USER} ${APP_DIR}",
         "debian-pkgs": "sudo apt update -y && sudo apt upgrade -y && sudo apt install -y xclip",
-        "poetry": "poetry install -vv"
+        "poetry": "poetry install -vv && poetry run pre-commit install"
     },
 
 	// Configure tool-specific properties.

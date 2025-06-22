@@ -1,8 +1,8 @@
 from pathlib import Path
 from typing import Any, Final
 
-import gspread
 import google.auth
+import gspread
 import pandas as pd
 from gspread import Spreadsheet, Worksheet
 
@@ -36,9 +36,7 @@ def find_expenses_file() -> Path:
     Returns:
         Path: Expenses file path
     """
-    return next(
-        IOResources.DATA_PATH.glob("*.xls")
-    )
+    return next(IOResources.DATA_PATH.glob("*.xls"))
 
 
 def prepare_expenses(expenses_filepath: Path) -> list[list[str]]:
@@ -52,7 +50,11 @@ def prepare_expenses(expenses_filepath: Path) -> list[list[str]]:
     """
     EXPENSES_COLUMNS_INDEX: tuple[str] = (1, 4, 6, 10)
     EXPENSES_COLUMNS_KEYS: tuple[str] = ("date", "description", "location", "amount")
-    CARD_PAYMENT_DESC: Final[tuple[str]] = ("TEF PAGO NORMAL", "Pago Pesos TAR", "Pago Pesos TEF PAGO NORMAL")
+    CARD_PAYMENT_DESC: Final[tuple[str]] = (
+        "TEF PAGO NORMAL",
+        "Pago Pesos TAR",
+        "Pago Pesos TEF PAGO NORMAL",
+    )
 
     expenses: pd.DataFrame = pd.read_excel(
         expenses_filepath,
@@ -62,10 +64,7 @@ def prepare_expenses(expenses_filepath: Path) -> list[list[str]]:
         usecols=EXPENSES_COLUMNS_INDEX,
     )
 
-    expenses = expenses[
-        (~ expenses.description.isin(CARD_PAYMENT_DESC))
-    ] \
-    .fillna("")
+    expenses = expenses[(~expenses.description.isin(CARD_PAYMENT_DESC))].fillna("")
 
     return expenses.values.tolist()
 
@@ -85,7 +84,9 @@ def update_balance_spreadsheet(account_amount: str, expenses: list[list[str]]) -
     gc: gspread.Client = gspread.authorize(credentials)
 
     spreadsheet: Spreadsheet = gc.open_by_key(BalanceSpreadsheet.KEY)
-    worksheet: Worksheet = spreadsheet.worksheet(BalanceSpreadsheet.EXPENSES_WORKSHEET_NAME)
+    worksheet: Worksheet = spreadsheet.worksheet(
+        BalanceSpreadsheet.EXPENSES_WORKSHEET_NAME
+    )
 
     worksheet.update_acell(BalanceSpreadsheet.AMOUNT_CELL, account_amount)
     worksheet.update(expenses, BalanceSpreadsheet.EXPENSES_CELL)

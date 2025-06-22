@@ -13,8 +13,8 @@ from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support.wait import WebDriverWait
 
 from vigilant import logger
-from vigilant.common.constants import Locators, Secrets, IOResources
-from vigilant.common.exceptions import DriverException, DownloadTimeout 
+from vigilant.common.constants import IOResources, Locators, Secrets
+from vigilant.common.exceptions import DownloadTimeout, DriverException
 
 DEFAULT_TIMEOUT: Final[float] = 15.0
 DEFAULT_DOWNLOAD_TIMEOUT: Final[float] = 3.0
@@ -45,19 +45,24 @@ def build_driver_options() -> ChromeOptions:
         ChromeOptions: Chrome profile object
     """
     options = ChromeOptions()
-    options.add_experimental_option("prefs", {
-        "download.default_directory": IOResources.DATA_PATH.as_posix(),
-        "download.prompt_for_download": False,
-        "download.directory_upgrade": True,
-        "safebrowsing_for_trusted_sources_enabled": False,
-        "safebrowsing.enabled": False
-    })
+    options.add_experimental_option(
+        "prefs",
+        {
+            "download.default_directory": IOResources.DATA_PATH.as_posix(),
+            "download.prompt_for_download": False,
+            "download.directory_upgrade": True,
+            "safebrowsing_for_trusted_sources_enabled": False,
+            "safebrowsing.enabled": False,
+        },
+    )
 
     options.add_argument("--headless")
     options.add_argument("--no-sandbox")
     options.add_argument("--verbose")
 
-    options.add_argument("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.7103.92 Safari/537.36")
+    options.add_argument(
+        "--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.7103.92 Safari/537.36"
+    )
 
     options.add_argument("--disable-gpu")
     options.add_argument("--disable-notifications")
@@ -102,8 +107,9 @@ def take_screenshot(driver: Chrome) -> str:
     screenshot_path: str = tempfile.mktemp(suffix=".png")
     driver.get_screenshot_as_file(screenshot_path)
 
-    logger.info(f"\N{camera} Browser screenshot saved at: {screenshot_path}")
+    logger.info(f"\N{CAMERA} Browser screenshot saved at: {screenshot_path}")
     return screenshot_path
+
 
 def clear_resources() -> None:
     """Setup resources directory for data persistence"""
@@ -132,8 +138,12 @@ def get_current_amount(driver: WebDriver) -> None:
     if driver.find_elements(By.CLASS_NAME, Locators.PROMOTION_BANNER_CLASS):
         driver.find_element(By.XPATH, Locators.BANNER_CLOSE_BTN_XPATH).click()
 
-    account_amount: str = driver.find_element(By.CLASS_NAME, Locators.AMOUNT_TEXT_CLASS).text
-    (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).write_text(account_amount.replace(".", "").replace("$", "").strip())
+    account_amount: str = driver.find_element(
+        By.CLASS_NAME, Locators.AMOUNT_TEXT_CLASS
+    ).text
+    (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).write_text(
+        account_amount.replace(".", "").replace("$", "").strip()
+    )
 
 
 def get_credit_transactions(driver: WebDriver) -> None:
@@ -148,7 +158,9 @@ def get_credit_transactions(driver: WebDriver) -> None:
     driver.find_element(By.XPATH, Locators.DOWNLOAD_BTN_XPATH).click()
 
     try:
-        check_condition_timeout(lambda: list(IOResources.DATA_PATH.glob("*.xls")), DEFAULT_DOWNLOAD_TIMEOUT)
+        check_condition_timeout(
+            lambda: list(IOResources.DATA_PATH.glob("*.xls")), DEFAULT_DOWNLOAD_TIMEOUT
+        )
     except TimeoutError:
         raise DownloadTimeout(DEFAULT_DOWNLOAD_TIMEOUT)
 
@@ -160,13 +172,15 @@ def logout(driver: WebDriver) -> None:
         driver (WebDriver): Chrome driver object
     """
     wait = WebDriverWait(driver, timeout=DEFAULT_TIMEOUT)
-    wait.until_not(lambda _: driver.find_elements(By.CLASS_NAME, Locators.DOWNLOAD_TOAST_CLASS))
+    wait.until_not(
+        lambda _: driver.find_elements(By.CLASS_NAME, Locators.DOWNLOAD_TOAST_CLASS)
+    )
 
     driver.find_element(By.CLASS_NAME, Locators.LOGOUT_BTN_CLASS).click()
 
 
 def check_condition_timeout(condition: Callable, timeout: float) -> None:
-    """Evaluate until given condition is met or the timeout is exceeded 
+    """Evaluate until given condition is met or the timeout is exceeded
 
     Args:
         condition (Callable): Function which evaluates the desired condition. (Expects to return True when the condition is met)
@@ -174,7 +188,7 @@ def check_condition_timeout(condition: Callable, timeout: float) -> None:
 
     Raises:
         TimeoutError: Condition wasn't met in the time frame
-    """    
+    """
     remaining_time: float = timeout
 
     while not condition():

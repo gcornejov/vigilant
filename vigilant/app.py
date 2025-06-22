@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
-from vigilant.run import main as run
 from vigilant.common.exceptions import VigilantException
+from vigilant.run import main as run
 
 app = FastAPI()
 
