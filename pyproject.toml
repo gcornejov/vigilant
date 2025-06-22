@@ -32,6 +32,8 @@ addopts = "--cov=vigilant --cov-branch --cov-report term-missing"
 [tool.coverage.report]
 exclude_also = [
     "if __name__ == .__main__.:",
+    "\\.\\.\\.",
+    "pass",
 ]
 
 [build-system]

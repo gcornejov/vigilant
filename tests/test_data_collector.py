@@ -98,17 +98,23 @@ def test_driver_session_exception(
     driver.quit.assert_called_once()
 
 
-def test_take_screenshot(tmp_path: Path, mock_driver: mock.MagicMock):
+def test_take_screenshot(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_driver: mock.MagicMock
+):
     screenshot_filename: str = "test_sc.png"
     screenshot_path: Path = tmp_path / screenshot_filename
+    image_data: bytes = b"Hesitation is defeat!"
 
-    mock_driver.get_screenshot_as_file = lambda _: screenshot_path.write_text(
-        "Hesitation is defeat!"
+    mock_driver.get_screenshot_as_png.return_value = image_data
+    monkeypatch.setattr(
+        "vigilant.common.storage.LocalStorage.save_image",
+        lambda *_: screenshot_path.write_bytes(image_data),
     )
 
     data_collector.take_screenshot(mock_driver)
+    image: bytes = screenshot_path.read_bytes()
 
-    assert screenshot_path.exists()
+    assert screenshot_path.exists() and image == image_data
 
 
 def test_clear_resources(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

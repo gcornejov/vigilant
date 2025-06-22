@@ -14,10 +14,13 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 from vigilant import logger
 from vigilant.common.exceptions import DownloadTimeout, DriverException
+from vigilant.common.storage import LocalStorage
 from vigilant.common.values import IOResources, Locators, Secrets
 
 DEFAULT_TIMEOUT: Final[float] = 15.0
 DEFAULT_DOWNLOAD_TIMEOUT: Final[float] = 3.0
+
+storage = LocalStorage()
 
 
 def main() -> None:
@@ -105,7 +108,9 @@ def take_screenshot(driver: Chrome) -> str:
         driver (Chrome): Chrome driver object
     """
     screenshot_path: str = tempfile.mktemp(suffix=".png")
-    driver.get_screenshot_as_file(screenshot_path)
+    image_data: bytes = driver.get_screenshot_as_png()
+
+    storage.save_image(image_data, screenshot_path)
 
     logger.info(f"\N{CAMERA} Browser screenshot saved at: {screenshot_path}")
     return screenshot_path
