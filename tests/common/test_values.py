@@ -1,7 +1,7 @@
 import os
 from typing import Final
 
-from vigilant.common.constants import MetaSecrets
+from vigilant.common.values import MetaSecrets
 
 
 def test_secrets_metaclass() -> None:

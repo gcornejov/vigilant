@@ -7,7 +7,7 @@ import pandas as pd
 from gspread import Spreadsheet, Worksheet
 
 from vigilant import logger
-from vigilant.common.constants import BalanceSpreadsheet, IOResources
+from vigilant.common.values import BalanceSpreadsheet, IOResources
 
 
 def main() -> None:
