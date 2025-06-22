@@ -1,4 +1,4 @@
-    {
+{
     "name": "vigilant",
     "image": "mcr.microsoft.com/vscode/devcontainers/base:bullseye",
 
