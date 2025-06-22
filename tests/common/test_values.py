@@ -1,13 +1,13 @@
 import os
 from typing import Final
 
-from vigilant.common.values import MetaSecrets
+from vigilant.common.values import MetaEnvironment
 
 
-def test_secrets_metaclass() -> None:
+def test_environment_metaclass() -> None:
     os.environ["ENV_TEST"] = "test_value"
 
-    class Secrets(metaclass=MetaSecrets):
+    class Environment(metaclass=MetaEnvironment):
         TEST_ENV: Final[str] = "ENV_TEST"
 
-    assert Secrets.TEST_ENV == "test_value"
+    assert Environment.TEST_ENV == "test_value"

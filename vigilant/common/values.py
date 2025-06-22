@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Final
 
 
-class MetaSecrets(type):
+class MetaEnvironment(type):
     """
     A metaclass used to access a environment variable from a class attribute value
     """
@@ -14,7 +14,11 @@ class MetaSecrets(type):
         return os.getenv(env_var, "")
 
 
-class Secrets(metaclass=MetaSecrets):
+class Environment(metaclass=MetaEnvironment):
+    LOG_LEVEL: Final[str] = "LOG_LEVEL"
+
+
+class Secrets(metaclass=MetaEnvironment):
     USERNAME: Final[str] = "PORTAL_USERNAME"
     PASSWORD: Final[str] = "PORTAL_PASSWORD"
 
