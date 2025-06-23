@@ -48,6 +48,7 @@ class Locators:
 
 class IOResources:
     APP_ROOT_PATH: Final[Path] = Path("/var", "lib", "vigilant")
+    SCREENSHOTS_PATH: Final[str] = "screenshots"
 
     DATA_DIR: Final[str] = "data_collection"
     DATA_PATH: Final[Path] = APP_ROOT_PATH / DATA_DIR

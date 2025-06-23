@@ -9,8 +9,10 @@ def test_local_storage() -> None:
     image_data: bytes = b"rgb_data"
 
     storage = LocalStorage()
-    storage.save_image(image_data, image_path)
+    saved_path: str = storage.save_image(image_data, image_path)
 
     image: bytes = Path(image_path).read_bytes()
 
-    assert Path(image_path).exists() and image == image_data
+    assert (
+        image_path == saved_path and Path(image_path).exists() and image == image_data
+    )
