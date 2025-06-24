@@ -23,8 +23,8 @@ from vigilant.common.values import (
     StorageLocation,
 )
 
-DEFAULT_TIMEOUT: Final[float] = 1.0
-DEFAULT_DOWNLOAD_TIMEOUT: Final[float] = 1.0
+DEFAULT_TIMEOUT: Final[float] = 15.0
+DEFAULT_DOWNLOAD_TIMEOUT: Final[float] = 3.0
 
 storage = (
     GoogleCloudStorage()
