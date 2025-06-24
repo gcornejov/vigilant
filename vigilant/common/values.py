@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Final
 
 
-class MetaSecrets(type):
+class MetaEnvironment(type):
     """
     A metaclass used to access a environment variable from a class attribute value
     """
@@ -14,7 +14,13 @@ class MetaSecrets(type):
         return os.getenv(env_var, "")
 
 
-class Secrets(metaclass=MetaSecrets):
+class Environment(metaclass=MetaEnvironment):
+    LOG_LEVEL: Final[str] = "LOG_LEVEL"
+    STORAGE_LOCATION: Final[str] = "STORAGE_LOCATION"
+    BUCKET_NAME: Final[str] = "BUCKET_NAME"
+
+
+class Secrets(metaclass=MetaEnvironment):
     USERNAME: Final[str] = "PORTAL_USERNAME"
     PASSWORD: Final[str] = "PORTAL_PASSWORD"
 
@@ -44,6 +50,7 @@ class Locators:
 
 class IOResources:
     APP_ROOT_PATH: Final[Path] = Path("/var", "lib", "vigilant")
+    SCREENSHOTS_PATH: Final[str] = "screenshots"
 
     DATA_DIR: Final[str] = "data_collection"
     DATA_PATH: Final[Path] = APP_ROOT_PATH / DATA_DIR
@@ -58,3 +65,8 @@ class BalanceSpreadsheet:
 
     AMOUNT_CELL: Final[str] = "I2"
     EXPENSES_CELL: Final[str] = "B3"
+
+
+class StorageLocation:
+    LOCAL: Final[str] = "local"
+    GCS: Final[str] = "gcs"

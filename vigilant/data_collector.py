@@ -1,9 +1,9 @@
 import random
 import shutil
-import tempfile
 import time
 from collections.abc import Callable, Generator
 from contextlib import contextmanager
+from datetime import datetime
 from typing import Final
 
 from selenium.common.exceptions import WebDriverException
@@ -13,11 +13,24 @@ from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support.wait import WebDriverWait
 
 from vigilant import logger
-from vigilant.common.constants import IOResources, Locators, Secrets
 from vigilant.common.exceptions import DownloadTimeout, DriverException
+from vigilant.common.storage import GoogleCloudStorage, LocalStorage
+from vigilant.common.values import (
+    Environment,
+    IOResources,
+    Locators,
+    Secrets,
+    StorageLocation,
+)
 
-DEFAULT_TIMEOUT: Final[float] = 15.0
-DEFAULT_DOWNLOAD_TIMEOUT: Final[float] = 3.0
+DEFAULT_TIMEOUT: Final[float] = 1.0
+DEFAULT_DOWNLOAD_TIMEOUT: Final[float] = 1.0
+
+storage = (
+    GoogleCloudStorage()
+    if Environment.STORAGE_LOCATION == StorageLocation.GCS
+    else LocalStorage()
+)
 
 
 def main() -> None:
@@ -99,16 +112,19 @@ def driver_session() -> Generator[WebDriver]:
 
 
 def take_screenshot(driver: Chrome) -> str:
-    """Takes a screenshot of the browser window and saves it in a tmp file.
+    """Takes a screenshot of the browser window and saves it in storage.
 
     Args:
         driver (Chrome): Chrome driver object
     """
-    screenshot_path: str = tempfile.mktemp(suffix=".png")
-    driver.get_screenshot_as_file(screenshot_path)
+    date_now: str = datetime.now().strftime("%Y%m%d%H%M%S")
+    screenshot_path: str = f"{IOResources.SCREENSHOTS_PATH}/browser-{date_now}.png"
 
-    logger.info(f"\N{CAMERA} Browser screenshot saved at: {screenshot_path}")
-    return screenshot_path
+    image_data: bytes = driver.get_screenshot_as_png()
+    saved_path: str = storage.save_image(image_data, screenshot_path)
+
+    logger.info(f"\N{CAMERA} Browser screenshot saved at: {saved_path}")
+    return saved_path
 
 
 def clear_resources() -> None:
