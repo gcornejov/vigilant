@@ -16,6 +16,8 @@ class MetaEnvironment(type):
 
 class Environment(metaclass=MetaEnvironment):
     LOG_LEVEL: Final[str] = "LOG_LEVEL"
+    STORAGE_LOCATION: Final[str] = "STORAGE_LOCATION"
+    BUCKET_NAME: Final[str] = "BUCKET_NAME"
 
 
 class Secrets(metaclass=MetaEnvironment):
@@ -63,3 +65,8 @@ class BalanceSpreadsheet:
 
     AMOUNT_CELL: Final[str] = "I2"
     EXPENSES_CELL: Final[str] = "B3"
+
+
+class StorageLocation:
+    LOCAL: Final[str] = "local"
+    GCS: Final[str] = "gcs"

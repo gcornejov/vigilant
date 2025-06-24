@@ -1,3 +1,4 @@
+from collections.abc import Generator
 from itertools import cycle
 from pathlib import Path
 from typing import Iterator
@@ -13,7 +14,7 @@ from vigilant.common.values import IOResources
 
 
 @pytest.fixture
-def mock_driver():
+def mock_driver() -> Generator[mock.MagicMock]:
     return mock.MagicMock()
 
 

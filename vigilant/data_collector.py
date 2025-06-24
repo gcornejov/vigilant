@@ -14,13 +14,23 @@ from selenium.webdriver.support.wait import WebDriverWait
 
 from vigilant import logger
 from vigilant.common.exceptions import DownloadTimeout, DriverException
-from vigilant.common.storage import LocalStorage
-from vigilant.common.values import IOResources, Locators, Secrets
+from vigilant.common.storage import GoogleCloudStorage, LocalStorage
+from vigilant.common.values import (
+    Environment,
+    IOResources,
+    Locators,
+    Secrets,
+    StorageLocation,
+)
 
-DEFAULT_TIMEOUT: Final[float] = 15.0
-DEFAULT_DOWNLOAD_TIMEOUT: Final[float] = 3.0
+DEFAULT_TIMEOUT: Final[float] = 1.0
+DEFAULT_DOWNLOAD_TIMEOUT: Final[float] = 1.0
 
-storage = LocalStorage()
+storage = (
+    GoogleCloudStorage()
+    if Environment.STORAGE_LOCATION == StorageLocation.GCS
+    else LocalStorage()
+)
 
 
 def main() -> None:
