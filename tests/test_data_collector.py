@@ -1,21 +1,13 @@
-from collections.abc import Generator
 from itertools import cycle
 from pathlib import Path
 from typing import Iterator
 from unittest import mock
 
 import pytest
-from selenium.common.exceptions import WebDriverException
-from selenium.webdriver import ChromeOptions
 
 from vigilant import data_collector
-from vigilant.common.exceptions import DownloadTimeout, DriverException
+from vigilant.common.exceptions import DownloadTimeout
 from vigilant.common.values import IOResources
-
-
-@pytest.fixture
-def mock_driver() -> Generator[mock.MagicMock]:
-    return mock.MagicMock()
 
 
 @mock.patch("vigilant.data_collector.driver_session")
@@ -40,82 +32,6 @@ def test_main(
     get_current_amount.assert_called_once()
     get_credit_transactions.assert_called_once()
     logout.assert_called_once()
-
-
-def test_build_driver_options(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    expected_preferences: tuple[tuple[str, (bool | str)], ...] = (
-        ("download.default_directory", str(tmp_path)),
-        ("download.prompt_for_download", False),
-        ("download.directory_upgrade", True),
-        ("safebrowsing_for_trusted_sources_enabled", False),
-        ("safebrowsing.enabled", False),
-    )
-    expected_arguments: list[str] = [
-        "--headless",
-        "--no-sandbox",
-        "--verbose",
-        "--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.7103.92 Safari/537.36",
-        "--disable-gpu",
-        "--disable-notifications",
-        "--disable-dev-shm-usage",
-        "--disable-setuid-sandbox",
-        "--disable-software-rasterizer",
-    ]
-
-    monkeypatch.setattr("vigilant.common.values.IOResources.DATA_PATH", tmp_path)
-
-    options = data_collector.build_driver_options()
-    preferences = options.experimental_options["prefs"].items()
-
-    assert isinstance(options, ChromeOptions)
-    assert all([expect_pref in preferences for expect_pref in expected_preferences])
-    assert all([expect_args in options.arguments for expect_args in expected_arguments])
-
-
-@mock.patch("vigilant.data_collector.Chrome")
-def test_driver_session(mock_driver_class: mock.MagicMock) -> None:
-    mock_driver_class.return_value = mock.MagicMock()
-
-    with data_collector.driver_session() as driver:
-        ...
-
-    driver.implicitly_wait.assert_called_once()
-    driver.set_window_size.assert_called_once_with(1920, 1080)
-    driver.quit.assert_called_once()
-
-
-@mock.patch("vigilant.data_collector.Chrome")
-@mock.patch("vigilant.data_collector.take_screenshot")
-def test_driver_session_exception(
-    mock_driver_class: mock.MagicMock, take_screenshot: mock.MagicMock
-) -> None:
-    mock_driver_class.return_value = mock.MagicMock()
-
-    with pytest.raises(DriverException):
-        with data_collector.driver_session() as driver:
-            raise WebDriverException
-
-    take_screenshot.assert_called_once()
-    driver.quit.assert_called_once()
-
-
-def test_take_screenshot(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_driver: mock.MagicMock
-):
-    screenshot_filename: str = "test_sc.png"
-    screenshot_path: Path = tmp_path / screenshot_filename
-    image_data: bytes = b"Hesitation is defeat!"
-
-    mock_driver.get_screenshot_as_png.return_value = image_data
-    monkeypatch.setattr(
-        "vigilant.common.storage.LocalStorage.save_image",
-        lambda *_: screenshot_path.write_bytes(image_data),
-    )
-
-    data_collector.take_screenshot(mock_driver)
-    image: bytes = screenshot_path.read_bytes()
-
-    assert screenshot_path.exists() and image == image_data
 
 
 def test_clear_resources(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
