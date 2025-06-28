@@ -5,48 +5,33 @@ from unittest import mock
 
 import pytest
 
-from vigilant import data_collector
 from vigilant.common.exceptions import DownloadTimeout
 from vigilant.common.values import IOResources
+from vigilant.data_collector import crawler
+from vigilant.data_collector.crawler import ChileCrawler
 
 
-@mock.patch("vigilant.data_collector.driver_session")
-@mock.patch("vigilant.data_collector.clear_resources")
-@mock.patch("vigilant.data_collector.login")
-@mock.patch("vigilant.data_collector.get_current_amount")
-@mock.patch("vigilant.data_collector.get_credit_transactions")
-@mock.patch("vigilant.data_collector.logout")
-def test_main(
-    logout: mock.MagicMock,
-    get_credit_transactions: mock.MagicMock,
-    get_current_amount: mock.MagicMock,
-    login: mock.MagicMock,
-    clear_resources: mock.MagicMock,
-    driver_session: mock.MagicMock,
+@mock.patch("vigilant.data_collector.crawler.ChileCrawler._login")
+@mock.patch("vigilant.data_collector.crawler.ChileCrawler._get_current_amount")
+@mock.patch("vigilant.data_collector.crawler.ChileCrawler._get_credit_transactions")
+@mock.patch("vigilant.data_collector.crawler.ChileCrawler._logout")
+def test_crawl(
+    _login: mock.MagicMock,
+    _get_current_amount: mock.MagicMock,
+    _get_credit_transactions: mock.MagicMock,
+    _logout: mock.MagicMock,
+    mock_driver: mock.MagicMock,
 ) -> None:
-    data_collector.main()
+    ChileCrawler(mock_driver).crawl()
 
-    driver_session.assert_called_once()
-    clear_resources.assert_called_once()
-    login.assert_called_once()
-    get_current_amount.assert_called_once()
-    get_credit_transactions.assert_called_once()
-    logout.assert_called_once()
-
-
-def test_clear_resources(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    tmp_file: Path = tmp_path / "test_file.txt"
-    tmp_file.write_text("Hesitation is defeat!")
-
-    monkeypatch.setattr("vigilant.common.values.IOResources.DATA_PATH", tmp_path)
-
-    data_collector.clear_resources()
-
-    assert tmp_path.exists() and not any(tmp_path.iterdir())
+    _login.assert_called_once()
+    _get_current_amount.assert_called_once()
+    _get_credit_transactions.assert_called_once()
+    _logout.assert_called_once()
 
 
 def test_login(mock_driver: mock.MagicMock) -> None:
-    data_collector.login(mock_driver)
+    ChileCrawler(mock_driver)._login()
 
     mock_driver.get.assert_called_once()
     mock_driver.find_element.assert_called()
@@ -75,7 +60,7 @@ def test_get_current_amount(
 
     monkeypatch.setattr("vigilant.common.values.IOResources.DATA_PATH", tmp_path)
 
-    data_collector.get_current_amount(mock_driver)
+    ChileCrawler(mock_driver)._get_current_amount()
     amount: str = (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).read_text()
 
     mock_driver.find_elements.assert_called_once()
@@ -87,38 +72,36 @@ def test_get_credit_transactions(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_driver: mock.MagicMock
 ) -> None:
     monkeypatch.setattr("vigilant.common.values.IOResources.DATA_PATH", tmp_path)
-    (tmp_path / "file.xls").write_text("Heasitation is defeat!")
+    (tmp_path / "file.xls").write_text("Hesitation is defeat!")
 
-    data_collector.get_credit_transactions(mock_driver)
+    ChileCrawler(mock_driver)._get_credit_transactions()
 
     mock_driver.get.assert_called_once()
 
 
 @mock.patch(
-    "vigilant.data_collector.check_condition_timeout",
+    "vigilant.data_collector.crawler.check_condition_timeout",
     mock.Mock(side_effect=TimeoutError),
 )
-def test_get_credit_transactions_exception(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_driver: mock.MagicMock
-) -> None:
+def test_get_credit_transactions_exception(mock_driver: mock.MagicMock) -> None:
     with pytest.raises(DownloadTimeout):
-        data_collector.get_credit_transactions(mock_driver)
+        ChileCrawler(mock_driver)._get_credit_transactions()
 
 
 def test_logout(mock_driver: mock.MagicMock) -> None:
     mock_driver.find_elements.return_value = False
 
-    data_collector.logout(mock_driver)
+    ChileCrawler(mock_driver)._logout()
 
     mock_driver.find_elements.assert_called()
     mock_driver.find_element.assert_called()
     mock_driver.find_element().click.assert_called()
 
 
-@mock.patch("vigilant.data_collector.DEFAULT_TIMEOUT", 0.1)
+@mock.patch("vigilant.common.values.Timeout.DEFAULT_TIMEOUT", 0.1)
 def test_logout_timeout(mock_driver: mock.MagicMock) -> None:
     with pytest.raises(Exception):
-        data_collector.logout(mock_driver)
+        ChileCrawler(mock_driver)._logout()
 
     mock_driver.find_elements.assert_called()
 
@@ -127,7 +110,7 @@ def test_check_condition_timeout() -> None:
     binary_values: Iterator[str] = cycle((0, 1))
     mock_timeout: float = 3.0
 
-    data_collector.check_condition_timeout(lambda: next(binary_values), mock_timeout)
+    crawler.check_condition_timeout(lambda: next(binary_values), mock_timeout)
 
 
 def test_check_condition_timeout_not_met() -> None:
@@ -135,6 +118,4 @@ def test_check_condition_timeout_not_met() -> None:
     mock_timeout: float = 0.1
 
     with pytest.raises(TimeoutError):
-        data_collector.check_condition_timeout(
-            lambda: next(binary_values), mock_timeout
-        )
+        crawler.check_condition_timeout(lambda: next(binary_values), mock_timeout)
