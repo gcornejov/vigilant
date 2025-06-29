@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from vigilant import update_spreadsheet
-from vigilant.common.values import IOResources
+from vigilant.common.values import Documents, IOResources
 
 
 @mock.patch("vigilant.update_spreadsheet.update_balance_spreadsheet")
@@ -15,15 +15,11 @@ def test_main(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     mock_amount: int = 1000
-    mock_expenses_filepath = Path("/tmp/expenses.xls")
     mock_expenses: list[list[Any]] = [["store", 100]]
 
     monkeypatch.setattr("vigilant.update_spreadsheet.load_amount", lambda: mock_amount)
     monkeypatch.setattr(
-        "vigilant.update_spreadsheet.find_expenses_file", lambda: mock_expenses_filepath
-    )
-    monkeypatch.setattr(
-        "vigilant.update_spreadsheet.prepare_expenses", lambda _: mock_expenses
+        "vigilant.update_spreadsheet.prepare_expenses", lambda: mock_expenses
     )
 
     update_spreadsheet.main()
@@ -42,20 +38,8 @@ def test_load_amount(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     assert amount == mock_amount
 
 
-def test_find_expenses_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    mock_expenses_file: str = "mock.xls"
-
-    monkeypatch.setattr("vigilant.common.values.IOResources.DATA_PATH", tmp_path)
-    (tmp_path / mock_expenses_file).write_text("")
-
-    expenses_file: Path = update_spreadsheet.find_expenses_file()
-
-    assert isinstance(expenses_file, Path) and expenses_file.name == mock_expenses_file
-
-
 @mock.patch("vigilant.update_spreadsheet.pd.read_excel")
 def test_prepare_expenses(mock_pd_read_excel: mock.MagicMock) -> None:
-    mock_path = Path("/")
     mock_cols_keys: tuple[str] = ("date", "description", "location", "amount")
     mock_cols_index: tuple[str] = (1, 4, 6, 10)
 
@@ -74,10 +58,10 @@ def test_prepare_expenses(mock_pd_read_excel: mock.MagicMock) -> None:
 
     mock_pd_read_excel.return_value = mock_data_df
 
-    expenses: list[list[Any]] = update_spreadsheet.prepare_expenses(mock_path)
+    expenses: list[list[Any]] = update_spreadsheet.prepare_expenses()
 
     mock_pd_read_excel.assert_called_once_with(
-        Path("/"),
+        Documents.NATIONAL_CREDIT,
         sheet_name=0,
         header=17,
         names=mock_cols_keys,

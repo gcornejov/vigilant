@@ -10,6 +10,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from vigilant import logger
 from vigilant.common.exceptions import DownloadTimeout
 from vigilant.common.values import (
+    Documents,
     IOResources,
     Locators,
     Secrets,
@@ -29,11 +30,13 @@ class Crawler(ABC):
 
 class ChileCrawler(Crawler):
     def crawl(self) -> None:
-        logger.info("Crawling though 'Banco de Chile' portal ...")
+        logger.info("Navigating through 'Banco de Chile' portal ...")
 
         self._login()
         self._get_current_amount()
-        self._get_credit_transactions()
+        self._get_checking_transactions()
+        self._get_national_credit_transactions()
+        self._get_international_credit_transactions()
         self._logout()
 
     def _login(self) -> None:
@@ -59,24 +62,67 @@ class ChileCrawler(Crawler):
         account_amount: str = self.driver.find_element(
             By.CLASS_NAME, Locators.AMOUNT_TEXT_CLASS
         ).text
-        (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).write_text(
+        IOResources.DATA_PATH.joinpath(IOResources.AMOUNT_FILENAME).write_text(
             account_amount.replace(".", "").replace("$", "").strip()
         )
 
-    def _get_credit_transactions(self) -> None:
-        """Collect current transactions on credit card"""
-        logger.info("Getting transactions ...")
+    def _get_checking_transactions(self) -> None:
+        """Collect current transactions on checking account"""
+        logger.info("Getting checking account transactions ...")
 
-        self.driver.get(Secrets.CREDIT_TRANSACTIONS_URL)
+        self.driver.find_element(By.ID, Locators.CHECKING_ACCOUNT_LINK_ID).click()
 
-        self.driver.find_element(By.XPATH, Locators.DOWNLOAD_GROUP_BTN_XPATH).click()
-        self.driver.find_element(By.XPATH, Locators.DOWNLOAD_BTN_XPATH).click()
+        self.driver.find_element(
+            By.XPATH, Locators.CHECKING_DOWNLOAD_GROUP_BTN_XPATH
+        ).click()
+        self.driver.find_element(By.XPATH, Locators.CHECKING_DOWNLOAD_BTN_XPATH).click()
 
         try:
             check_condition_timeout(
-                lambda: list(IOResources.DATA_PATH.glob("*.xls")),
+                lambda: Documents.CHECKING_CARD.exists(),
                 Timeout.DEFAULT_DOWNLOAD_TIMEOUT,
             )
+        except TimeoutError:
+            raise DownloadTimeout(Timeout.DEFAULT_DOWNLOAD_TIMEOUT)
+
+    def _get_national_credit_transactions(self) -> None:
+        """Collect current national transactions on credit card"""
+        logger.info("Getting national credit transactions ...")
+
+        self.driver.get(Secrets.CREDIT_TRANSACTIONS_URL)
+
+        self.driver.find_element(
+            By.XPATH, Locators.NATIONAL_CREDIT_DOWNLOAD_GROUP_BTN_XPATH
+        ).click()
+        self.driver.find_element(By.XPATH, Locators.CREDIT_DOWNLOAD_BTN_XPATH).click()
+
+        try:
+            check_condition_timeout(
+                lambda: Documents.CREDIT_TRANSACTIONS.exists(),
+                Timeout.DEFAULT_DOWNLOAD_TIMEOUT,
+            )
+            Documents.CREDIT_TRANSACTIONS.rename(Documents.NATIONAL_CREDIT)
+        except TimeoutError:
+            raise DownloadTimeout(Timeout.DEFAULT_DOWNLOAD_TIMEOUT)
+
+    def _get_international_credit_transactions(self) -> None:
+        """Collect current international transactions on credit card"""
+        logger.info("Getting international credit transactions ...")
+
+        self.driver.refresh()
+
+        self.driver.find_element(By.ID, Locators.INTERNATIONAL_CREDIT_BTN_ID).click()
+        self.driver.find_element(
+            By.XPATH, Locators.INTERNATIONAL_CREDIT_DOWNLOAD_GROUP_BTN_XPATH
+        ).click()
+        self.driver.find_element(By.XPATH, Locators.CREDIT_DOWNLOAD_BTN_XPATH).click()
+
+        try:
+            check_condition_timeout(
+                lambda: Documents.CREDIT_TRANSACTIONS.exists(),
+                Timeout.DEFAULT_DOWNLOAD_TIMEOUT,
+            )
+            Documents.CREDIT_TRANSACTIONS.rename(Documents.INTERNATIONAL_CREDIT)
         except TimeoutError:
             raise DownloadTimeout(Timeout.DEFAULT_DOWNLOAD_TIMEOUT)
 

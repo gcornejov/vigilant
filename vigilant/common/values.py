@@ -33,6 +33,8 @@ class Locators:
     USER_INPUT_ID: Final[str] = "ppriv_per-click-input-rut"
     PASSWORD_INPUT_ID: Final[str] = "ppriv_per-click-input-password"
     LOGIN_BTN_ID: Final[str] = "ppriv_per-click-ingresar-login"
+    CHECKING_ACCOUNT_LINK_ID: Final[str] = "btn-home_CuentaCorrienteMonedaLocal"
+    INTERNATIONAL_CREDIT_BTN_ID: Final[str] = "mat-tab-label-1-1"
 
     PROMOTION_BANNER_CLASS: Final[str] = "fondo"
     AMOUNT_TEXT_CLASS: Final[str] = "monto-cuenta"
@@ -42,10 +44,19 @@ class Locators:
     BANNER_CLOSE_BTN_XPATH: Final[str] = (
         '//*[@id="mat-dialog-0"]/fenix-modal-zona-emergente/div/div/div/button'
     )
-    DOWNLOAD_GROUP_BTN_XPATH: Final[str] = (
-        '//*[@id="mat-tab-content-1-0"]/div/fenix-movimientos-no-facturados-tabla/div[1]/div[1]/div[2]/bch-button/div/button'
+    CHECKING_DOWNLOAD_GROUP_BTN_XPATH: Final[str] = (
+        '//*[@id="main"]/fenix-movimientos-root/div/div/fenix-main/section/fenix-movimientos-cuenta/div/div[3]/div[1]/div[1]/div[2]/bch-button/div/button/span[1]/span'
     )
-    DOWNLOAD_BTN_XPATH: Final[str] = '//*[@id="cdk-overlay-0"]/div/div/button[1]'
+    CHECKING_DOWNLOAD_BTN_XPATH: Final[str] = (
+        '//*[@id="mat-menu-panel-0"]/div/button[1]'
+    )
+    NATIONAL_CREDIT_DOWNLOAD_GROUP_BTN_XPATH: Final[str] = (
+        '//*[@id="mat-tab-content-1-0"]/div/fenix-movimientos-no-facturados-tabla/div[1]/div[1]/div[2]/bch-button'
+    )
+    INTERNATIONAL_CREDIT_DOWNLOAD_GROUP_BTN_XPATH: Final[str] = (
+        '//*[@id="mat-tab-content-1-1"]/div/fenix-movimientos-no-facturados-tabla/div[1]/div[1]/div[2]/bch-button'
+    )
+    CREDIT_DOWNLOAD_BTN_XPATH: Final[str] = '//*[@id="cdk-overlay-0"]/div/div/button[1]'
 
 
 class IOResources:
@@ -56,6 +67,18 @@ class IOResources:
     DATA_PATH: Final[Path] = APP_ROOT_PATH / DATA_DIR
 
     AMOUNT_FILENAME: Final[str] = "account_amount.txt"
+
+
+class Documents:
+    CREDIT_TRANSACTIONS: Final[Path] = (
+        IOResources.DATA_PATH / "Saldo_y_Mov_No_Facturado.xls"
+    )
+
+    CHECKING_CARD: Final[Path] = IOResources.DATA_PATH / "cartola.xls"
+    NATIONAL_CREDIT: Final[Path] = IOResources.DATA_PATH / "national-credit.xls"
+    INTERNATIONAL_CREDIT: Final[Path] = (
+        IOResources.DATA_PATH / "international-credit.xls"
+    )
 
 
 class BalanceSpreadsheet:

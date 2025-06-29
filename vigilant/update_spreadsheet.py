@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Any, Final
 
 import google.auth
@@ -7,17 +6,15 @@ import pandas as pd
 from gspread import Spreadsheet, Worksheet
 
 from vigilant import logger
-from vigilant.common.values import BalanceSpreadsheet, IOResources
+from vigilant.common.values import BalanceSpreadsheet, Documents, IOResources
 
 
 def main() -> None:
     """Load expenses data into a google spreadsheet"""
     current_amount: str = load_amount()
-    expenses_filepath: Path = find_expenses_file()
+    expenses: list[list[Any]] = prepare_expenses()
 
     logger.info("Updating spreadsheet ...")
-    expenses: list[list[Any]] = prepare_expenses(expenses_filepath)
-
     update_balance_spreadsheet(current_amount, expenses)
 
 
@@ -30,16 +27,7 @@ def load_amount() -> str:
     return (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).read_text()
 
 
-def find_expenses_file() -> Path:
-    """Find file path containing the expenses
-
-    Returns:
-        Path: Expenses file path
-    """
-    return next(IOResources.DATA_PATH.glob("*.xls"))
-
-
-def prepare_expenses(expenses_filepath: Path) -> list[list[str]]:
+def prepare_expenses() -> list[list[str]]:
     """Load expenses data from file and prepares it to load
 
     Args:
@@ -57,7 +45,7 @@ def prepare_expenses(expenses_filepath: Path) -> list[list[str]]:
     )
 
     expenses: pd.DataFrame = pd.read_excel(
-        expenses_filepath,
+        Documents.NATIONAL_CREDIT,
         sheet_name=0,
         header=17,
         names=EXPENSES_COLUMNS_KEYS,
