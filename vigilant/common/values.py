@@ -86,8 +86,10 @@ class BalanceSpreadsheet:
 
     EXPENSES_WORKSHEET_NAME: Final[str] = "Gastos"
 
-    AMOUNT_CELL: Final[str] = "I2"
-    EXPENSES_CELL: Final[str] = "B3"
+    AMOUNT_CELL: Final[str] = "L2"
+
+    TRANSACTIONS_COLUMN: Final[str] = "B%i"
+    TRANSACTIONS_ROW: Final[int] = 3
 
 
 class StorageLocation:

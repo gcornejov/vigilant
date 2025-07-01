@@ -77,7 +77,7 @@ def test_update_balance_spreadsheet(
 ) -> None:
     mock_google_auth.default.return_value = ("A", "B")
 
-    update_spreadsheet.update_balance_spreadsheet(0, [[]])
+    update_spreadsheet.write_balance(0, [[]])
 
     mock_google_auth.default.assert_called_once()
     mock_gspread.authorize.assert_called_once()

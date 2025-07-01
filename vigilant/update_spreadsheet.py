@@ -1,68 +1,60 @@
-from typing import Any, Final
-
 import google.auth
 import gspread
-import pandas as pd
-from gspread import Spreadsheet, Worksheet
 
 from vigilant import logger
-from vigilant.common.values import BalanceSpreadsheet, Documents, IOResources
+from vigilant.common.values import BalanceSpreadsheet
+from vigilant.balance import Balance
+from vigilant.transactions import Transactions
 
 
 def main() -> None:
-    """Load expenses data into a google spreadsheet"""
-    current_amount: str = load_amount()
-    expenses: list[list[Any]] = prepare_expenses()
+    """Loads and writes balance into a google spreadsheet"""
+    logger.info("Loading balance data ...")
+    balance = Balance.collect()
 
-    logger.info("Updating spreadsheet ...")
-    update_balance_spreadsheet(current_amount, expenses)
-
-
-def load_amount() -> str:
-    """Loads amount from file
-
-    Returns:
-        str: Amount
-    """
-    return (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).read_text()
+    logger.info("Writing balance into spreadsheet ...")
+    write_balance(balance)
 
 
-def prepare_expenses() -> list[list[str]]:
-    """Load expenses data from file and prepares it to load
+def write_balance(balance: Balance) -> None:
+    """Progressively write balance data in spread sheet following its concrete
+    format. Remaining checking account amount in a cell. The transactions in a
+    table separated by a blank row in order.
+
+    1. National Credit
+    2. International Credit
+    3. Checking Account
 
     Args:
-        expenses_filepath (Path): Expenses file path
+        balance (Balance): Collection of balance data
+    """
+    worksheet: gspread.Worksheet = get_worksheet()
+
+    # Account amount
+    worksheet.update_acell(BalanceSpreadsheet.AMOUNT_CELL, balance.account_amount)
+
+    trx_idx: int = BalanceSpreadsheet.TRANSACTIONS_ROW
+    # National Credit
+    trx_idx: int = write_transactions(
+        worksheet, balance.national_credit_transactions, trx_idx
+    )
+
+    # International Credit
+    trx_idx: int = write_separator(worksheet, trx_idx)
+    trx_idx: int = write_transactions(
+        worksheet, balance.international_credit_transactions, trx_idx
+    )
+
+    # Checking
+    trx_idx: int = write_separator(worksheet, trx_idx)
+    write_transactions(worksheet, balance.checking_account_transactions, trx_idx)
+
+
+def get_worksheet() -> gspread.Worksheet:
+    """Stablish connection with Balance Worksheet
 
     Returns:
-        list[list[str]]: Prepared expenses data
-    """
-    EXPENSES_COLUMNS_INDEX: tuple[str] = (1, 4, 6, 10)
-    EXPENSES_COLUMNS_KEYS: tuple[str] = ("date", "description", "location", "amount")
-    CARD_PAYMENT_DESC: Final[tuple[str]] = (
-        "TEF PAGO NORMAL",
-        "Pago Pesos TAR",
-        "Pago Pesos TEF PAGO NORMAL",
-    )
-
-    expenses: pd.DataFrame = pd.read_excel(
-        Documents.NATIONAL_CREDIT,
-        sheet_name=0,
-        header=17,
-        names=EXPENSES_COLUMNS_KEYS,
-        usecols=EXPENSES_COLUMNS_INDEX,
-    )
-
-    expenses = expenses[(~expenses.description.isin(CARD_PAYMENT_DESC))].fillna("")
-
-    return expenses.values.tolist()
-
-
-def update_balance_spreadsheet(account_amount: str, expenses: list[list[str]]) -> None:
-    """Uploads expenses data into a google spreadsheet
-
-    Args:
-        account_amount (str): Account amount
-        expenses (list[list[str]]): Expenses list
+        Worksheet: Worksheet object
     """
     scopes: list[str] = [
         "https://www.googleapis.com/auth/spreadsheets",
@@ -71,13 +63,44 @@ def update_balance_spreadsheet(account_amount: str, expenses: list[list[str]]) -
     credentials, _ = google.auth.default(scopes=scopes)
     gc: gspread.Client = gspread.authorize(credentials)
 
-    spreadsheet: Spreadsheet = gc.open_by_key(BalanceSpreadsheet.KEY)
-    worksheet: Worksheet = spreadsheet.worksheet(
-        BalanceSpreadsheet.EXPENSES_WORKSHEET_NAME
+    spreadsheet: gspread.Spreadsheet = gc.open_by_key(BalanceSpreadsheet.KEY)
+    return spreadsheet.worksheet("GastosV2")
+
+
+def write_transactions(
+    worksheet: gspread.Worksheet, data: Transactions, idx: int
+) -> int:
+    """Writes one block of transactions and increments the row pointer.
+
+    Args:
+        worksheet (gspread.Worksheet): Worksheet object
+        data (Transactions): Transactions data object
+        idx (int): Current row pointer
+
+    Returns:
+        int: Updated row pointer before last written transaction
+    """
+    national_credit = data.to_list()
+    worksheet.update(national_credit, BalanceSpreadsheet.TRANSACTIONS_COLUMN % idx)
+
+    return idx + len(national_credit)
+
+
+def write_separator(worksheet: gspread.Worksheet, idx: int) -> int:
+    """Writes separator row
+
+    Args:
+        worksheet (gspread.Worksheet): Worksheet object
+        idx (int): Current row pointer
+
+    Returns:
+        int: Updated row pointer before separator row
+    """
+    worksheet.update(
+        [("", "", "", "", "", "", "")], BalanceSpreadsheet.TRANSACTIONS_COLUMN % idx
     )
 
-    worksheet.update_acell(BalanceSpreadsheet.AMOUNT_CELL, account_amount)
-    worksheet.update(expenses, BalanceSpreadsheet.EXPENSES_CELL)
+    return idx + 1
 
 
 if __name__ == "__main__":
