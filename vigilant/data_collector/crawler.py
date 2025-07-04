@@ -6,6 +6,7 @@ from collections.abc import Callable
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver import Keys, ActionChains
 
 from vigilant import logger
 from vigilant.common.exceptions import DownloadTimeout
@@ -56,8 +57,8 @@ class ChileCrawler(Crawler):
         """Collect current account amount and save it in a file"""
         logger.info("Getting current amount ...")
 
-        if self.driver.find_elements(By.CLASS_NAME, Locators.PROMOTION_BANNER_CLASS):
-            self.driver.find_element(By.XPATH, Locators.BANNER_CLOSE_BTN_XPATH).click()
+        self.driver.find_element(By.CLASS_NAME, Locators.PROMOTION_BANNER_CLASS)
+        ActionChains(self.driver).key_down(Keys.ESCAPE).perform()
 
         account_amount: str = self.driver.find_element(
             By.CLASS_NAME, Locators.AMOUNT_TEXT_CLASS
