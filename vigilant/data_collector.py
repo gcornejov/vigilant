@@ -24,7 +24,7 @@ from vigilant.common.values import (
 )
 
 DEFAULT_TIMEOUT: Final[float] = 15.0
-DEFAULT_DOWNLOAD_TIMEOUT: Final[float] = 3.0
+DEFAULT_DOWNLOAD_TIMEOUT: Final[float] = 5.0
 
 storage = (
     GoogleCloudStorage()
