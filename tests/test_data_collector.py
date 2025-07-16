@@ -6,7 +6,7 @@ from unittest import mock
 
 import pytest
 from selenium.common.exceptions import WebDriverException
-from selenium.webdriver import ChromeOptions
+from selenium.webdriver import ChromeOptions, Keys
 
 from vigilant import data_collector
 from vigilant.common.exceptions import DownloadTimeout, DriverException
@@ -138,15 +138,12 @@ def test_login(mock_driver: mock.MagicMock) -> None:
     mock_driver.find_element().click.assert_called_once()
 
 
-@pytest.mark.parametrize(
-    "found_elements",
-    (([]), (["banner"])),
-)
+@mock.patch("vigilant.data_collector.ActionChains")
 def test_get_current_amount(
+    mock_cls_action_chains: mock.MagicMock,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     mock_driver: mock.MagicMock,
-    found_elements: list[str],
 ) -> None:
     mock_formatted_amount: str = " $1.000"
     mock_amount: str = "1000"
@@ -155,15 +152,18 @@ def test_get_current_amount(
     mock_element.text = mock_formatted_amount
     mock_driver.find_element.return_value = mock_element
 
-    mock_driver.find_elements.return_value = found_elements
+    mock_action = mock.MagicMock()
+    mock_cls_action_chains.return_value = mock_action
 
     monkeypatch.setattr("vigilant.common.values.IOResources.DATA_PATH", tmp_path)
 
     data_collector.get_current_amount(mock_driver)
     amount: str = (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).read_text()
 
-    mock_driver.find_elements.assert_called_once()
     mock_driver.find_element.assert_called()
+    mock_action.key_down.assert_called_once_with(Keys.ESCAPE)
+    mock_action.key_down().perform.assert_called_once()
+
     assert amount == mock_amount
 
 
