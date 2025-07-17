@@ -10,25 +10,28 @@ RUN poetry export -o /requirements.txt --without-hashes --without-urls
 FROM python:3.12-slim AS build-service
 
 RUN apt update -y && apt upgrade -y
-RUN DEBIAN_FRONTEND=noninteractive apt install -y wget unzip fonts-liberation libnspr4 libnss3 xdg-utils \
-    libasound2 libatk-bridge2.0-0 libatk1.0-0 libatspi2.0-0 libcairo2 libcups2 libcurl3-gnutls libcurl3-nss \
-    libcurl4 libgtk-3-0 libgtk-4-1 libpango-1.0-0 libvulkan1 libxdamage1 libxkbcommon0
+RUN apt install -y curl jq wget unzip
 
-RUN wget -O google-chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
-    dpkg -i google-chrome.deb && \
-    rm google-chrome.deb
+# Install Chrome Browser
+RUN wget -O google-chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb \
+    && dpkg -i google-chrome.deb || apt -f install -y
 
-RUN CHROME_VERSION=$(echo "$(google-chrome --version)" | awk '{print $NF}') && \
-    wget -O chromedriver.zip https://storage.googleapis.com/chrome-for-testing-public/${CHROME_VERSION}/linux64/chromedriver-linux64.zip && \
-    unzip chromedriver.zip -d chromedriver && \
-    cp chromedriver/chromedriver-linux64/chromedriver /usr/local/bin/ && \
-    rm -r chromedriver chromedriver.zip
+# Install Chrome Driver
+RUN CHROME_VERSION=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json" | jq '.channels.Stable.version' -r) \
+    && wget -O chromedriver.zip https://storage.googleapis.com/chrome-for-testing-public/$CHROME_VERSION/linux64/chromedriver-linux64.zip \
+    && unzip chromedriver.zip -d chromedriver \
+    && cp chromedriver/chromedriver-linux64/chromedriver /usr/local/bin/
 
+RUN rm -r google-chrome.deb chromedriver chromedriver.zip
+
+# Create app folder
 RUN mkdir -p -m 777 /var/lib/vigilant
 
+# Install dependencies
 COPY --from=build-deps /requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir --upgrade -r requirements.txt
 
+# Copy app source code
 ADD vigilant /vigilant
 
 CMD ["uvicorn", "vigilant.app:app", "--host", "0.0.0.0", "--port", "8080"]
