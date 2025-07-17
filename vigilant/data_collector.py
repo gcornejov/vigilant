@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Final
 
 from selenium.common.exceptions import WebDriverException
-from selenium.webdriver import Chrome, ChromeOptions
+from selenium.webdriver import Chrome, ChromeOptions, Keys, ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.support.wait import WebDriverWait
@@ -24,7 +24,7 @@ from vigilant.common.values import (
 )
 
 DEFAULT_TIMEOUT: Final[float] = 15.0
-DEFAULT_DOWNLOAD_TIMEOUT: Final[float] = 3.0
+DEFAULT_DOWNLOAD_TIMEOUT: Final[float] = 5.0
 
 storage = (
     GoogleCloudStorage()
@@ -151,8 +151,8 @@ def get_current_amount(driver: WebDriver) -> None:
     Args:
         driver (WebDriver): Chrome driver object
     """
-    if driver.find_elements(By.CLASS_NAME, Locators.PROMOTION_BANNER_CLASS):
-        driver.find_element(By.XPATH, Locators.BANNER_CLOSE_BTN_XPATH).click()
+    driver.find_element(By.CLASS_NAME, Locators.PROMOTION_BANNER_CLASS)
+    ActionChains(driver).key_down(Keys.ESCAPE).perform()
 
     account_amount: str = driver.find_element(
         By.CLASS_NAME, Locators.AMOUNT_TEXT_CLASS
