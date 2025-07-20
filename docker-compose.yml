@@ -1,0 +1,24 @@
+services:
+  robot:
+    build: .
+    cpus: 1
+    mem_limit: 2GB
+    ports:
+      - "8080:8080"
+    volumes:
+      - ${LOCAL_WORKSPACE_FOLDER}/screenshots:/screenshots
+      - gcloud_credentials:/root/.config/gcloud
+    env_file:
+      - ./.env
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./vigilant
+          target: /vigilant
+        - action: rebuild
+          path: ./poetry.lock
+
+volumes:
+  gcloud_credentials:
+    name: ${GCLOUD_CREDS_VOLUME}
+    external: true
