@@ -7,13 +7,13 @@
         "ghcr.io/devcontainers/features/common-utils:2": {"configureZshAsDefaultShell": true},
         "ghcr.io/devcontainers/features/python:1": {"version": "3.12"},
         "ghcr.io/devcontainers-extra/features/poetry:2": {},
+        "ghcr.io/devcontainers/features/terraform:1": {},
         "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
         "ghcr.io/devcontainers/features/git:1": {},
         "ghcr.io/devcontainers/features/github-cli:1": {},
         "ghcr.io/dhoeric/features/google-cloud-cli:1": {},
         "ghcr.io/joshuanianji/devcontainer-features/gcloud-cli-persistence:1": {},
         "ghcr.io/gcornejov/devex/chrome-for-testing:0": {},
-        "ghcr.io/devcontainers-extra/features/zsh-plugins:0": {"plugins": "docker gcloud poetry"},
         "ghcr.io/gcornejov/devex/zsh-p10k:0": {}
     },
 
@@ -50,7 +50,8 @@
                 "mutantdino.resourcemonitor",
                 "charliermarsh.ruff",
                 "eamodio.gitlens",
-                "rid9.datetime"
+                "rid9.datetime",
+                "4ops.terraform"
             ],
             "settings": {
                 "python.defaultInterpreterPath": ".venv/bin/activate",
