@@ -6,28 +6,37 @@ import pandas as pd
 import pytest
 
 from vigilant import update_spreadsheet
-from vigilant.common.values import IOResources
+from vigilant.common.values import BalanceSpreadsheet, IOResources
 
 
+@mock.patch("vigilant.update_spreadsheet.SpreadSheet")
 @mock.patch("vigilant.update_spreadsheet.update_balance_spreadsheet")
 def test_main(
     update_balance_spreadsheet: mock.MagicMock,
+    SpreadSheet: mock.MagicMock,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     mock_amount: int = 1000
     mock_expenses_filepath = Path("/tmp/expenses.xls")
     mock_expenses: list[list[Any]] = [["store", 100]]
 
+    mock_spreadsheet = mock.MagicMock()
+    SpreadSheet.load.return_value = mock_spreadsheet
+
     monkeypatch.setattr("vigilant.update_spreadsheet.load_amount", lambda: mock_amount)
     monkeypatch.setattr(
         "vigilant.update_spreadsheet.find_expenses_file", lambda: mock_expenses_filepath
     )
     monkeypatch.setattr(
-        "vigilant.update_spreadsheet.prepare_expenses", lambda _: mock_expenses
+        "vigilant.update_spreadsheet.prepare_expenses", lambda *_: mock_expenses
     )
 
     update_spreadsheet.main()
 
+    SpreadSheet.load.assert_called_once_with(BalanceSpreadsheet.KEY)
+    mock_spreadsheet.read.assert_called_once_with(
+        BalanceSpreadsheet.DATA_WORKSHEET_NAME, BalanceSpreadsheet.PAYMENT_DESC_RANGE
+    )
     update_balance_spreadsheet.assert_called_once_with(mock_amount, mock_expenses)
 
 
@@ -67,6 +76,8 @@ def test_prepare_expenses(mock_pd_read_excel: mock.MagicMock) -> None:
     ]
     mock_data_df = pd.DataFrame(mock_data, columns=mock_cols_keys)
 
+    mock_payment_description: list[str] = ["TEF PAGO NORMAL", "Pago Pesos TAR"]
+
     mock_expenses: list[list[Any]] = [
         ["1999/12/31", "Clothes", "Santiago", 25000],
         ["1999/12/24", "Food", "", 40000],
@@ -74,7 +85,9 @@ def test_prepare_expenses(mock_pd_read_excel: mock.MagicMock) -> None:
 
     mock_pd_read_excel.return_value = mock_data_df
 
-    expenses: list[list[Any]] = update_spreadsheet.prepare_expenses(mock_path)
+    expenses: list[list[Any]] = update_spreadsheet.prepare_expenses(
+        mock_path, mock_payment_description
+    )
 
     mock_pd_read_excel.assert_called_once_with(
         Path("/"),

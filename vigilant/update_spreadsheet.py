@@ -1,12 +1,12 @@
 from pathlib import Path
-from typing import Any, Final
+from typing import Any
 
 import google.auth
 import gspread
 import pandas as pd
-from gspread import Spreadsheet, Worksheet
 
 from vigilant import logger
+from vigilant.common.spreadsheet import SpreadSheet
 from vigilant.common.values import BalanceSpreadsheet, IOResources
 
 
@@ -14,10 +14,20 @@ def main() -> None:
     """Load expenses data into a google spreadsheet"""
     current_amount: str = load_amount()
     expenses_filepath: Path = find_expenses_file()
+    spreadsheet = SpreadSheet.load(BalanceSpreadsheet.KEY)
+
+    payment_descriptions: list[str] = [
+        desc.pop()
+        for desc in spreadsheet.read(
+            BalanceSpreadsheet.DATA_WORKSHEET_NAME,
+            BalanceSpreadsheet.PAYMENT_DESC_RANGE,
+        )
+    ]
+    expenses: list[list[Any]] = prepare_expenses(
+        expenses_filepath, payment_descriptions
+    )
 
     logger.info("Updating spreadsheet ...")
-    expenses: list[list[Any]] = prepare_expenses(expenses_filepath)
-
     update_balance_spreadsheet(current_amount, expenses)
 
 
@@ -39,22 +49,20 @@ def find_expenses_file() -> Path:
     return next(IOResources.DATA_PATH.glob("*.xls"))
 
 
-def prepare_expenses(expenses_filepath: Path) -> list[list[str]]:
+def prepare_expenses(
+    expenses_filepath: Path, description_ignore: list[str]
+) -> list[list[str]]:
     """Load expenses data from file and prepares it to load
 
     Args:
         expenses_filepath (Path): Expenses file path
+        description_ignore (list[str]): List of restrictions to filter
 
     Returns:
         list[list[str]]: Prepared expenses data
     """
     EXPENSES_COLUMNS_INDEX: tuple[str] = (1, 4, 6, 10)
     EXPENSES_COLUMNS_KEYS: tuple[str] = ("date", "description", "location", "amount")
-    CARD_PAYMENT_DESC: Final[tuple[str]] = (
-        "TEF PAGO NORMAL",
-        "Pago Pesos TAR",
-        "Pago Pesos TEF PAGO NORMAL",
-    )
 
     expenses: pd.DataFrame = pd.read_excel(
         expenses_filepath,
@@ -64,7 +72,7 @@ def prepare_expenses(expenses_filepath: Path) -> list[list[str]]:
         usecols=EXPENSES_COLUMNS_INDEX,
     )
 
-    expenses = expenses[(~expenses.description.isin(CARD_PAYMENT_DESC))].fillna("")
+    expenses = expenses[(~expenses.description.isin(description_ignore))].fillna("")
 
     return expenses.values.tolist()
 
@@ -83,8 +91,8 @@ def update_balance_spreadsheet(account_amount: str, expenses: list[list[str]]) -
     credentials, _ = google.auth.default(scopes=scopes)
     gc: gspread.Client = gspread.authorize(credentials)
 
-    spreadsheet: Spreadsheet = gc.open_by_key(BalanceSpreadsheet.KEY)
-    worksheet: Worksheet = spreadsheet.worksheet(
+    spreadsheet: gspread.Spreadsheet = gc.open_by_key(BalanceSpreadsheet.KEY)
+    worksheet: gspread.Worksheet = spreadsheet.worksheet(
         BalanceSpreadsheet.EXPENSES_WORKSHEET_NAME
     )
 
