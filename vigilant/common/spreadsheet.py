@@ -42,3 +42,15 @@ class SpreadSheet:
         worksheet: gspread.Worksheet = self._spreadsheet.worksheet(worksheet_title)
 
         return worksheet.get(range)
+
+    def write(self, worksheet_title, range: str, data: list[list[str]]) -> None:
+        """Write data into a range of a worksheet
+
+        Args:
+            worksheet_title (str): Title of the worksheet
+            range (str): Location from where to read the data
+            data (list[list[str]]): Data to write in cells
+        """
+        worksheet: gspread.Worksheet = self._spreadsheet.worksheet(worksheet_title)
+
+        worksheet.update(data, range)

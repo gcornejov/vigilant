@@ -1,8 +1,6 @@
 from pathlib import Path
 from typing import Any
 
-import google.auth
-import gspread
 import pandas as pd
 
 from vigilant import logger
@@ -77,27 +75,26 @@ def prepare_expenses(
     return expenses.values.tolist()
 
 
-def update_balance_spreadsheet(account_amount: str, expenses: list[list[str]]) -> None:
+def update_balance_spreadsheet(
+    spreadsheet: SpreadSheet, account_amount: str, expenses: list[list[str]]
+) -> None:
     """Uploads expenses data into a google spreadsheet
 
     Args:
+        spreadsheet (SpreadSheet): spreadsheet instance
         account_amount (str): Account amount
         expenses (list[list[str]]): Expenses list
     """
-    scopes: list[str] = [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive",
-    ]
-    credentials, _ = google.auth.default(scopes=scopes)
-    gc: gspread.Client = gspread.authorize(credentials)
-
-    spreadsheet: gspread.Spreadsheet = gc.open_by_key(BalanceSpreadsheet.KEY)
-    worksheet: gspread.Worksheet = spreadsheet.worksheet(
-        BalanceSpreadsheet.EXPENSES_WORKSHEET_NAME
+    spreadsheet.write(
+        BalanceSpreadsheet.EXPENSES_WORKSHEET_NAME,
+        BalanceSpreadsheet.AMOUNT_CELL,
+        account_amount,
     )
-
-    worksheet.update_acell(BalanceSpreadsheet.AMOUNT_CELL, account_amount)
-    worksheet.update(expenses, BalanceSpreadsheet.EXPENSES_CELL)
+    spreadsheet.write(
+        BalanceSpreadsheet.EXPENSES_WORKSHEET_NAME,
+        BalanceSpreadsheet.EXPENSES_CELL,
+        expenses,
+    )
 
 
 if __name__ == "__main__":
