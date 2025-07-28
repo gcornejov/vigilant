@@ -37,14 +37,16 @@ def test_main(
     mock_spreadsheet.read.assert_called_once_with(
         BalanceSpreadsheet.DATA_WORKSHEET_NAME, BalanceSpreadsheet.PAYMENT_DESC_RANGE
     )
-    update_balance_spreadsheet.assert_called_once_with(mock_amount, mock_expenses)
+    update_balance_spreadsheet.assert_called_once_with(
+        mock_spreadsheet, mock_amount, mock_expenses
+    )
 
 
 def test_load_amount(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    mock_amount: str = "1000"
+    mock_amount: int = 1000
 
     monkeypatch.setattr("vigilant.common.values.IOResources.DATA_PATH", tmp_path)
-    (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).write_text(mock_amount)
+    (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).write_text(str(mock_amount))
 
     amount: str = update_spreadsheet.load_amount()
 
@@ -99,18 +101,11 @@ def test_prepare_expenses(mock_pd_read_excel: mock.MagicMock) -> None:
     assert expenses == mock_expenses
 
 
-@mock.patch("vigilant.update_spreadsheet.google.auth")
-@mock.patch("vigilant.update_spreadsheet.gspread")
-def test_update_balance_spreadsheet(
-    mock_gspread: mock.MagicMock, mock_google_auth: mock.MagicMock
-) -> None:
-    mock_google_auth.default.return_value = ("A", "B")
+@mock.patch("vigilant.update_spreadsheet.SpreadSheet")
+def test_update_balance_spreadsheet(SpreadSheet: mock.MagicMock) -> None:
+    mock_spreadsheet = mock.MagicMock()
+    SpreadSheet.load.return_value = mock_spreadsheet
 
-    update_spreadsheet.update_balance_spreadsheet(0, [[]])
+    update_spreadsheet.update_balance_spreadsheet(mock_spreadsheet, 0, [[]])
 
-    mock_google_auth.default.assert_called_once()
-    mock_gspread.authorize.assert_called_once()
-    mock_gspread.authorize().open_by_key.assert_called_once()
-    mock_gspread.authorize().open_by_key().worksheet.assert_called_once()
-    mock_gspread.authorize().open_by_key().worksheet().update_acell.assert_called_once()
-    mock_gspread.authorize().open_by_key().worksheet().update.assert_called_once()
+    mock_spreadsheet.write.assert_called()

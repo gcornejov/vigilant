@@ -35,3 +35,18 @@ def test_read() -> None:
 
     _mock_spreadsheet.worksheet.assert_called_once_with(mock_title)
     mock_worksheet.get.assert_called_once_with(mock_range)
+
+
+def test_write() -> None:
+    mock_title = "Hesitation"
+    mock_range = "Defeat"
+    mock_data = [["A"], ["B"], ["C"]]
+
+    mock_worksheet = mock.MagicMock()
+    _mock_spreadsheet = mock.MagicMock()
+    _mock_spreadsheet.worksheet.return_value = mock_worksheet
+
+    spreadsheet.SpreadSheet(_mock_spreadsheet).write(mock_title, mock_range, mock_data)
+
+    _mock_spreadsheet.worksheet.assert_called_once_with(mock_title)
+    mock_worksheet.update.assert_called_once_with(mock_data, mock_range)
