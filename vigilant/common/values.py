@@ -61,6 +61,10 @@ class IOResources:
 class BalanceSpreadsheet:
     KEY: Final[str] = "1IKyPmWeaZ_5IRa4I4EOgVwu5oGZ9RSQqQxjRu9P4qY4"
 
+    DATA_WORKSHEET_NAME: Final[str] = "Data"
+
+    PAYMENT_DESC_RANGE: Final[str] = "B3:B12"
+
     EXPENSES_WORKSHEET_NAME: Final[str] = "Gastos"
 
     AMOUNT_CELL: Final[str] = "I2"

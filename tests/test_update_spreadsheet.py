@@ -6,36 +6,47 @@ import pandas as pd
 import pytest
 
 from vigilant import update_spreadsheet
-from vigilant.common.values import IOResources
+from vigilant.common.values import BalanceSpreadsheet, IOResources
 
 
+@mock.patch("vigilant.update_spreadsheet.SpreadSheet")
 @mock.patch("vigilant.update_spreadsheet.update_balance_spreadsheet")
 def test_main(
     update_balance_spreadsheet: mock.MagicMock,
+    SpreadSheet: mock.MagicMock,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     mock_amount: int = 1000
     mock_expenses_filepath = Path("/tmp/expenses.xls")
     mock_expenses: list[list[Any]] = [["store", 100]]
 
+    mock_spreadsheet = mock.MagicMock()
+    SpreadSheet.load.return_value = mock_spreadsheet
+
     monkeypatch.setattr("vigilant.update_spreadsheet.load_amount", lambda: mock_amount)
     monkeypatch.setattr(
         "vigilant.update_spreadsheet.find_expenses_file", lambda: mock_expenses_filepath
     )
     monkeypatch.setattr(
-        "vigilant.update_spreadsheet.prepare_expenses", lambda _: mock_expenses
+        "vigilant.update_spreadsheet.prepare_expenses", lambda *_: mock_expenses
     )
 
     update_spreadsheet.main()
 
-    update_balance_spreadsheet.assert_called_once_with(mock_amount, mock_expenses)
+    SpreadSheet.load.assert_called_once_with(BalanceSpreadsheet.KEY)
+    mock_spreadsheet.read.assert_called_once_with(
+        BalanceSpreadsheet.DATA_WORKSHEET_NAME, BalanceSpreadsheet.PAYMENT_DESC_RANGE
+    )
+    update_balance_spreadsheet.assert_called_once_with(
+        mock_spreadsheet, mock_amount, mock_expenses
+    )
 
 
 def test_load_amount(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    mock_amount: str = "1000"
+    mock_amount: int = 1000
 
     monkeypatch.setattr("vigilant.common.values.IOResources.DATA_PATH", tmp_path)
-    (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).write_text(mock_amount)
+    (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).write_text(str(mock_amount))
 
     amount: str = update_spreadsheet.load_amount()
 
@@ -67,6 +78,8 @@ def test_prepare_expenses(mock_pd_read_excel: mock.MagicMock) -> None:
     ]
     mock_data_df = pd.DataFrame(mock_data, columns=mock_cols_keys)
 
+    mock_payment_description: list[str] = ["TEF PAGO NORMAL", "Pago Pesos TAR"]
+
     mock_expenses: list[list[Any]] = [
         ["1999/12/31", "Clothes", "Santiago", 25000],
         ["1999/12/24", "Food", "", 40000],
@@ -74,7 +87,9 @@ def test_prepare_expenses(mock_pd_read_excel: mock.MagicMock) -> None:
 
     mock_pd_read_excel.return_value = mock_data_df
 
-    expenses: list[list[Any]] = update_spreadsheet.prepare_expenses(mock_path)
+    expenses: list[list[Any]] = update_spreadsheet.prepare_expenses(
+        mock_path, mock_payment_description
+    )
 
     mock_pd_read_excel.assert_called_once_with(
         Path("/"),
@@ -86,18 +101,11 @@ def test_prepare_expenses(mock_pd_read_excel: mock.MagicMock) -> None:
     assert expenses == mock_expenses
 
 
-@mock.patch("vigilant.update_spreadsheet.google.auth")
-@mock.patch("vigilant.update_spreadsheet.gspread")
-def test_update_balance_spreadsheet(
-    mock_gspread: mock.MagicMock, mock_google_auth: mock.MagicMock
-) -> None:
-    mock_google_auth.default.return_value = ("A", "B")
+@mock.patch("vigilant.update_spreadsheet.SpreadSheet")
+def test_update_balance_spreadsheet(SpreadSheet: mock.MagicMock) -> None:
+    mock_spreadsheet = mock.MagicMock()
+    SpreadSheet.load.return_value = mock_spreadsheet
 
-    update_spreadsheet.update_balance_spreadsheet(0, [[]])
+    update_spreadsheet.update_balance_spreadsheet(mock_spreadsheet, 0, [[]])
 
-    mock_google_auth.default.assert_called_once()
-    mock_gspread.authorize.assert_called_once()
-    mock_gspread.authorize().open_by_key.assert_called_once()
-    mock_gspread.authorize().open_by_key().worksheet.assert_called_once()
-    mock_gspread.authorize().open_by_key().worksheet().update_acell.assert_called_once()
-    mock_gspread.authorize().open_by_key().worksheet().update.assert_called_once()
+    mock_spreadsheet.write.assert_called()
