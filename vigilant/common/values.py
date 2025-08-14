@@ -30,9 +30,9 @@ class Secrets(metaclass=MetaEnvironment):
 
 
 class Locators:
-    USER_INPUT_ID: Final[str] = "ppriv_per-click-input-rut"
-    PASSWORD_INPUT_ID: Final[str] = "ppriv_per-click-input-password"
-    LOGIN_BTN_ID: Final[str] = "ppriv_per-click-ingresar-login"
+    USER_INPUT_ID: Final[str] = "ppriv_per-login-click-input-rut"
+    PASSWORD_INPUT_ID: Final[str] = "ppriv_per-login-click-input-password"
+    LOGIN_BTN_ID: Final[str] = "ppriv_per-login-click-ingresar-login"
 
     PROMOTION_BANNER_CLASS: Final[str] = "fondo"
     AMOUNT_TEXT_CLASS: Final[str] = "monto-cuenta"
