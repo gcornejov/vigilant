@@ -1,7 +1,7 @@
 from collections.abc import Generator
 from itertools import cycle
 from pathlib import Path
-from typing import Iterator
+from typing import Final, Iterator
 from unittest import mock
 
 import pytest
@@ -12,10 +12,20 @@ from vigilant import data_collector
 from vigilant.common.exceptions import DownloadTimeout, DriverException
 from vigilant.common.values import IOResources
 
+DRIVER_WAIT_TIMEOUT: Final[float] = 5.0
+
 
 @pytest.fixture
 def mock_driver() -> Generator[mock.MagicMock]:
-    return mock.MagicMock()
+    driver = mock.MagicMock()
+    driver.timeouts.implicit_wait = DRIVER_WAIT_TIMEOUT
+
+    def mock_implicitly_wait(timeout: float):
+        driver.timeouts.implicit_wait = timeout
+
+    driver.implicitly_wait = mock_implicitly_wait
+
+    return driver
 
 
 @mock.patch("vigilant.data_collector.driver_session")
@@ -138,9 +148,11 @@ def test_login(mock_driver: mock.MagicMock) -> None:
     mock_driver.find_element().click.assert_called_once()
 
 
+@mock.patch("vigilant.data_collector.overwrite_implicitly_wait")
 @mock.patch("vigilant.data_collector.ActionChains")
 def test_get_current_amount(
     mock_cls_action_chains: mock.MagicMock,
+    mock_overwrite_implicitly_wait: mock.MagicMock,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     mock_driver: mock.MagicMock,
@@ -160,6 +172,7 @@ def test_get_current_amount(
     data_collector.get_current_amount(mock_driver)
     amount: str = (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).read_text()
 
+    mock_overwrite_implicitly_wait.assert_called_once()
     mock_driver.find_element.assert_called()
     mock_action.key_down.assert_called_once_with(Keys.ESCAPE)
     mock_action.key_down().perform.assert_called_once()
@@ -182,19 +195,24 @@ def test_get_credit_transactions(
     "vigilant.data_collector.check_condition_timeout",
     mock.Mock(side_effect=TimeoutError),
 )
-def test_get_credit_transactions_exception(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_driver: mock.MagicMock
-) -> None:
+def test_get_credit_transactions_exception(mock_driver: mock.MagicMock) -> None:
     with pytest.raises(DownloadTimeout):
         data_collector.get_credit_transactions(mock_driver)
 
 
-def test_logout(mock_driver: mock.MagicMock) -> None:
+@mock.patch("vigilant.data_collector.overwrite_implicitly_wait")
+@mock.patch("vigilant.data_collector.check_condition_timeout")
+def test_logout(
+    mock_check_condition_timeout: mock.MagicMock,
+    mock_overwrite_implicitly_wait: mock.MagicMock,
+    mock_driver: mock.MagicMock,
+) -> None:
     mock_driver.find_elements.return_value = False
 
     data_collector.logout(mock_driver)
 
-    mock_driver.find_elements.assert_called()
+    mock_overwrite_implicitly_wait.assert_called_once()
+    mock_check_condition_timeout.assert_called_once()
     mock_driver.find_element.assert_called()
     mock_driver.find_element().click.assert_called()
 
@@ -222,3 +240,19 @@ def test_check_condition_timeout_not_met() -> None:
         data_collector.check_condition_timeout(
             lambda: next(binary_values), mock_timeout
         )
+
+
+@pytest.mark.parametrize(
+    "timeout, expected_timeout",
+    (
+        ([], 0.0),
+        ([3.0], 3.0),
+    ),
+)
+def test_overwrite_implicitly_wait(
+    mock_driver: mock.MagicMock, timeout: list[float], expected_timeout: float
+):
+    with data_collector.overwrite_implicitly_wait(mock_driver, *timeout):
+        assert mock_driver.timeouts.implicit_wait == expected_timeout
+
+    assert mock_driver.timeouts.implicit_wait == DRIVER_WAIT_TIMEOUT
