@@ -2,15 +2,14 @@ import random
 import shutil
 import time
 from collections.abc import Callable, Generator
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from datetime import datetime
 from typing import Final
 
-from selenium.common.exceptions import WebDriverException
+from selenium.common.exceptions import NoSuchElementException, WebDriverException
 from selenium.webdriver import Chrome, ChromeOptions, Keys, ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
-from selenium.webdriver.support.wait import WebDriverWait
 
 from vigilant import logger
 from vigilant.common.exceptions import DownloadTimeout, DriverException
@@ -151,8 +150,14 @@ def get_current_amount(driver: WebDriver) -> None:
     Args:
         driver (WebDriver): Chrome driver object
     """
-    driver.find_element(By.CLASS_NAME, Locators.PROMOTION_BANNER_CLASS)
-    ActionChains(driver).key_down(Keys.ESCAPE).perform()
+    BANNER_WAIT_TIMEOUT: float = 3.0
+
+    with (
+        suppress(NoSuchElementException),
+        overwrite_implicitly_wait(driver, timeout=BANNER_WAIT_TIMEOUT),
+    ):
+        driver.find_element(By.CLASS_NAME, Locators.PROMOTION_BANNER_CLASS)
+        ActionChains(driver).key_down(Keys.ESCAPE).perform()
 
     account_amount: str = driver.find_element(
         By.CLASS_NAME, Locators.AMOUNT_TEXT_CLASS
@@ -187,12 +192,16 @@ def logout(driver: WebDriver) -> None:
     Args:
         driver (WebDriver): Chrome driver object
     """
-    wait = WebDriverWait(driver, timeout=DEFAULT_TIMEOUT)
-    wait.until_not(
-        lambda _: driver.find_elements(By.CLASS_NAME, Locators.DOWNLOAD_TOAST_CLASS)
-    )
+    with overwrite_implicitly_wait(driver):
 
-    driver.find_element(By.CLASS_NAME, Locators.LOGOUT_BTN_CLASS).click()
+        def logout_ready_condition() -> bool:
+            return not driver.find_elements(
+                By.CLASS_NAME, Locators.DOWNLOAD_TOAST_CLASS
+            )
+
+        check_condition_timeout(logout_ready_condition, DEFAULT_TIMEOUT)
+
+        driver.find_element(By.CLASS_NAME, Locators.LOGOUT_BTN_CLASS).click()
 
 
 def check_condition_timeout(condition: Callable, timeout: float) -> None:
@@ -216,6 +225,24 @@ def check_condition_timeout(condition: Callable, timeout: float) -> None:
         remaining_time -= time.time() - attempt_time
         if remaining_time <= 0:
             raise TimeoutError
+
+
+@contextmanager
+def overwrite_implicitly_wait(
+    driver: WebDriver, timeout: float = 0.0
+) -> Generator[None]:
+    """Overwrites the WebDriver wait timeout
+
+    Args:
+        driver (WebDriver): Chrome driver object
+        timeout (float, optional): Replacement timeout value. Defaults to 0.0.
+    """
+    original_timeout: float = driver.timeouts.implicit_wait
+    try:
+        driver.implicitly_wait(timeout)
+        yield
+    finally:
+        driver.implicitly_wait(original_timeout)
 
 
 if __name__ == "__main__":
