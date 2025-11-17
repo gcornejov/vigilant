@@ -56,6 +56,7 @@ class IOResources:
     DATA_PATH: Final[Path] = APP_ROOT_PATH / DATA_DIR
 
     AMOUNT_FILENAME: Final[str] = "account_amount.txt"
+    TRANSACTIONS_FILENAME: Final[str] = "transactions.xls"
 
 
 class BalanceSpreadsheet:
