@@ -1,128 +1,101 @@
-from collections.abc import Generator
-from itertools import cycle
 from pathlib import Path
-from typing import Final, Iterator
 from unittest import mock
 
 import pytest
-from selenium.common.exceptions import WebDriverException
-from selenium.webdriver import ChromeOptions, Keys
 
 from vigilant import data_collector
-from vigilant.common.exceptions import DownloadTimeout, DriverException
+from vigilant.common.exceptions import DriverException
 from vigilant.common.values import IOResources
-
-DRIVER_WAIT_TIMEOUT: Final[float] = 5.0
 
 
 @pytest.fixture
-def mock_driver() -> Generator[mock.MagicMock]:
-    driver = mock.MagicMock()
-    driver.timeouts.implicit_wait = DRIVER_WAIT_TIMEOUT
-
-    def mock_implicitly_wait(timeout: float):
-        driver.timeouts.implicit_wait = timeout
-
-    driver.implicitly_wait = mock_implicitly_wait
-
-    return driver
+def mock_page() -> mock.MagicMock:
+    return mock.MagicMock()
 
 
-@mock.patch("vigilant.data_collector.driver_session")
+@mock.patch("vigilant.data_collector.session")
 @mock.patch("vigilant.data_collector.clear_resources")
 @mock.patch("vigilant.data_collector.login")
 @mock.patch("vigilant.data_collector.get_current_amount")
 @mock.patch("vigilant.data_collector.get_credit_transactions")
-@mock.patch("vigilant.data_collector.logout")
 def test_main(
-    logout: mock.MagicMock,
     get_credit_transactions: mock.MagicMock,
     get_current_amount: mock.MagicMock,
     login: mock.MagicMock,
     clear_resources: mock.MagicMock,
-    driver_session: mock.MagicMock,
+    session: mock.MagicMock,
 ) -> None:
     data_collector.main()
 
-    driver_session.assert_called_once()
+    session.assert_called_once()
     clear_resources.assert_called_once()
     login.assert_called_once()
     get_current_amount.assert_called_once()
     get_credit_transactions.assert_called_once()
-    logout.assert_called_once()
 
 
-def test_build_driver_options(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    expected_preferences: tuple[tuple[str, (bool | str)], ...] = (
-        ("download.default_directory", str(tmp_path)),
-        ("download.prompt_for_download", False),
-        ("download.directory_upgrade", True),
-        ("safebrowsing_for_trusted_sources_enabled", False),
-        ("safebrowsing.enabled", False),
-    )
-    expected_arguments: list[str] = [
-        "--headless",
-        "--no-sandbox",
-        "--verbose",
-        "--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.7103.92 Safari/537.36",
-        "--disable-gpu",
-        "--disable-notifications",
-        "--disable-dev-shm-usage",
-        "--disable-setuid-sandbox",
-        "--disable-software-rasterizer",
-    ]
-
-    monkeypatch.setattr("vigilant.common.values.IOResources.DATA_PATH", tmp_path)
-
-    options = data_collector.build_driver_options()
-    preferences = options.experimental_options["prefs"].items()
-
-    assert isinstance(options, ChromeOptions)
-    assert all([expect_pref in preferences for expect_pref in expected_preferences])
-    assert all([expect_args in options.arguments for expect_args in expected_arguments])
-
-
-@mock.patch("vigilant.data_collector.Chrome")
-def test_driver_session(mock_driver_class: mock.MagicMock) -> None:
-    mock_driver_class.return_value = mock.MagicMock()
-
-    with data_collector.driver_session() as driver:
-        ...
-
-    driver.implicitly_wait.assert_called_once()
-    driver.set_window_size.assert_called_once_with(1920, 1080)
-    driver.quit.assert_called_once()
-
-
-@mock.patch("vigilant.data_collector.Chrome")
-@mock.patch("vigilant.data_collector.take_screenshot")
-def test_driver_session_exception(
-    mock_driver_class: mock.MagicMock, take_screenshot: mock.MagicMock
+@mock.patch("vigilant.data_collector.sync_playwright")
+def test_session(
+    mock_sync_playwright: mock.MagicMock, mock_page: mock.MagicMock
 ) -> None:
-    mock_driver_class.return_value = mock.MagicMock()
+    mock_browser = mock.MagicMock()
+    mock_browser.new_context.return_value.new_page.return_value = mock_page
+
+    mock_playwright_session = mock.MagicMock()
+    mock_playwright_session.chromium.launch.return_value = mock_browser
+
+    mock_sync_playwright.return_value.__enter__.return_value = mock_playwright_session
+
+    with data_collector.session() as session:
+        assert session == mock_page
+
+    mock_playwright_session.chromium.launch.assert_called_once_with(channel="chrome")
+    mock_browser.new_context.assert_called_once_with(
+        accept_downloads=True,
+        viewport={"width": 1920, "height": 1080},
+        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/123.0.0.0 Safari/537.36",
+    )
+    mock_browser.close.assert_called_once_with()
+    mock_page.set_default_timeout.assert_called_once_with(data_collector.WAIT_TIMEOUT)
+
+
+@mock.patch("vigilant.data_collector.sync_playwright")
+@mock.patch("vigilant.data_collector.take_screenshot")
+def test_session_exception(
+    mock_take_screenshot: mock.MagicMock, mock_sync_playwright: mock.MagicMock
+) -> None:
+    mock_browser, mock_playwright_session = mock.MagicMock(), mock.MagicMock()
+    mock_playwright_session.chromium.launch.return_value = mock_browser
+
+    mock_playwright_context_manager = mock.MagicMock()
+    mock_playwright_context_manager.__enter__.return_value = mock_playwright_session
+
+    mock_sync_playwright.return_value = mock_playwright_context_manager
 
     with pytest.raises(DriverException):
-        with data_collector.driver_session() as driver:
-            raise WebDriverException
+        with data_collector.session() as _:
+            raise Exception
 
-    take_screenshot.assert_called_once()
-    driver.quit.assert_called_once()
+    mock_take_screenshot.assert_called_once()
+    mock_browser.close.assert_called_once()
 
 
 def test_take_screenshot(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_driver: mock.MagicMock
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_page: mock.MagicMock
 ):
     screenshot_filename: str = "test_sc.png"
     screenshot_path: Path = tmp_path / screenshot_filename
     image_data: bytes = b"Hesitation is defeat!"
 
-    mock_driver.get_screenshot_as_png.return_value = image_data
+    mock_page.screenshot.return_value = image_data
     monkeypatch.setattr(
         "vigilant.common.storage.LocalStorage.save_image",
         lambda *_: screenshot_path.write_bytes(image_data),
     )
 
-    data_collector.take_screenshot(mock_driver)
+    data_collector.take_screenshot(mock_page)
     image: bytes = screenshot_path.read_bytes()
 
     assert screenshot_path.exists() and image == image_data
@@ -139,120 +112,49 @@ def test_clear_resources(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Non
     assert tmp_path.exists() and not any(tmp_path.iterdir())
 
 
-def test_login(mock_driver: mock.MagicMock) -> None:
-    data_collector.login(mock_driver)
+def test_login(mock_page: mock.MagicMock) -> None:
+    data_collector.login(mock_page)
 
-    mock_driver.get.assert_called_once()
-    mock_driver.find_element.assert_called()
-    mock_driver.find_element().send_keys.assert_called()
-    mock_driver.find_element().click.assert_called_once()
+    mock_page.goto.assert_called_once()
+    mock_page.locator().fill.assert_called()
+    mock_page.locator().click.assert_called_once()
+    mock_page.wait_for_url.assert_called_once()
 
 
-@mock.patch("vigilant.data_collector.overwrite_implicitly_wait")
-@mock.patch("vigilant.data_collector.ActionChains")
 def test_get_current_amount(
-    mock_cls_action_chains: mock.MagicMock,
-    mock_overwrite_implicitly_wait: mock.MagicMock,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    mock_driver: mock.MagicMock,
+    mock_page: mock.MagicMock,
 ) -> None:
     mock_formatted_amount: str = " $1.000"
     mock_amount: str = "1000"
 
-    mock_element = mock.MagicMock()
-    mock_element.text = mock_formatted_amount
-    mock_driver.find_element.return_value = mock_element
-
-    mock_action = mock.MagicMock()
-    mock_cls_action_chains.return_value = mock_action
+    mock_page.locator.return_value.first.text_content.return_value = (
+        mock_formatted_amount
+    )
 
     monkeypatch.setattr("vigilant.common.values.IOResources.DATA_PATH", tmp_path)
 
-    data_collector.get_current_amount(mock_driver)
+    data_collector.get_current_amount(mock_page)
     amount: str = (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).read_text()
-
-    mock_overwrite_implicitly_wait.assert_called_once()
-    mock_driver.find_element.assert_called()
-    mock_action.key_down.assert_called_once_with(Keys.ESCAPE)
-    mock_action.key_down().perform.assert_called_once()
 
     assert amount == mock_amount
 
 
 def test_get_credit_transactions(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_driver: mock.MagicMock
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_page: mock.MagicMock
 ) -> None:
+    (tmp_path / IOResources.TRANSACTIONS_FILENAME).write_text("Hesitation is defeat!")
+
     monkeypatch.setattr("vigilant.common.values.IOResources.DATA_PATH", tmp_path)
-    (tmp_path / "file.xls").write_text("Heasitation is defeat!")
 
-    data_collector.get_credit_transactions(mock_driver)
+    mock_download_info = mock.MagicMock()
+    mock_page.expect_download.return_value.__enter__.return_value = mock_download_info
 
-    mock_driver.get.assert_called_once()
+    data_collector.get_credit_transactions(mock_page)
 
-
-@mock.patch(
-    "vigilant.data_collector.check_condition_timeout",
-    mock.Mock(side_effect=TimeoutError),
-)
-def test_get_credit_transactions_exception(mock_driver: mock.MagicMock) -> None:
-    with pytest.raises(DownloadTimeout):
-        data_collector.get_credit_transactions(mock_driver)
-
-
-@mock.patch("vigilant.data_collector.overwrite_implicitly_wait")
-@mock.patch("vigilant.data_collector.check_condition_timeout")
-def test_logout(
-    mock_check_condition_timeout: mock.MagicMock,
-    mock_overwrite_implicitly_wait: mock.MagicMock,
-    mock_driver: mock.MagicMock,
-) -> None:
-    mock_driver.find_elements.return_value = False
-
-    data_collector.logout(mock_driver)
-
-    mock_overwrite_implicitly_wait.assert_called_once()
-    mock_check_condition_timeout.assert_called_once()
-    mock_driver.find_element.assert_called()
-    mock_driver.find_element().click.assert_called()
-
-
-@mock.patch("vigilant.data_collector.DEFAULT_TIMEOUT", 0.1)
-def test_logout_timeout(mock_driver: mock.MagicMock) -> None:
-    with pytest.raises(Exception):
-        data_collector.logout(mock_driver)
-
-    mock_driver.find_elements.assert_called()
-
-
-def test_check_condition_timeout() -> None:
-    binary_values: Iterator[str] = cycle((0, 1))
-    mock_timeout: float = 3.0
-
-    data_collector.check_condition_timeout(lambda: next(binary_values), mock_timeout)
-
-
-def test_check_condition_timeout_not_met() -> None:
-    binary_values: Iterator[str] = cycle((0, 1))
-    mock_timeout: float = 0.1
-
-    with pytest.raises(TimeoutError):
-        data_collector.check_condition_timeout(
-            lambda: next(binary_values), mock_timeout
-        )
-
-
-@pytest.mark.parametrize(
-    "timeout, expected_timeout",
-    (
-        ([], 0.0),
-        ([3.0], 3.0),
-    ),
-)
-def test_overwrite_implicitly_wait(
-    mock_driver: mock.MagicMock, timeout: list[float], expected_timeout: float
-):
-    with data_collector.overwrite_implicitly_wait(mock_driver, *timeout):
-        assert mock_driver.timeouts.implicit_wait == expected_timeout
-
-    assert mock_driver.timeouts.implicit_wait == DRIVER_WAIT_TIMEOUT
+    mock_page.goto.assert_called_once()
+    mock_page.locator().click.assert_called()
+    mock_download_info.value.save_as.assert_called_once_with(
+        IOResources.DATA_PATH / IOResources.TRANSACTIONS_FILENAME
+    )

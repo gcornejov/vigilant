@@ -13,7 +13,6 @@
         "ghcr.io/devcontainers/features/github-cli:1": {},
         "ghcr.io/dhoeric/features/google-cloud-cli:1": {},
         "ghcr.io/joshuanianji/devcontainer-features/gcloud-cli-persistence:1": {},
-        "ghcr.io/gcornejov/devex/chrome-for-testing:0": {},
         "ghcr.io/gcornejov/devex/zsh-p10k:0": {}
     },
 
@@ -31,6 +30,10 @@
         "poetry": "poetry install -vv && poetry run pre-commit install"
     },
 
+    "postStartCommand": {
+        "browser": "poetry run playwright install chrome --with-deps"
+    },
+
 	// Configure tool-specific properties.
 	"customizations": {
         "vscode": {
@@ -39,7 +42,6 @@
                 "ms-toolsai.jupyter",
                 "ms-azuretools.vscode-docker",
                 "docker.docker",
-                "angelo-breuer.clock",
                 "tamasfe.even-better-toml",
                 "njpwerner.autodocstring",
                 "streetsidesoftware.code-spell-checker",

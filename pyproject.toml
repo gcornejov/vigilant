@@ -9,12 +9,12 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "gspread (>=6.2.0,<7.0.0)",
-    "selenium (>=4.29.0,<5.0.0)",
     "pandas[excel] (>=2.2.3,<3.0.0)",
     "google-auth (>=2.38.0,<3.0.0)",
     "fastapi[standard] (>=0.115.12,<0.116.0)",
     "uvicorn (>=0.34.2,<0.35.0)",
     "google-cloud-storage (>=3.1.1,<4.0.0)",
+    "playwright (>=1.56.0,<2.0.0)",
 ]
 
 [tool.poetry.group.dev.dependencies]
