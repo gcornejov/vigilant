@@ -73,6 +73,8 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
+    env:
+      TF_VAR_secrets: "${{ secrets.SECRETS_JSON }}"
     steps:
       - uses: actions/checkout@v4
       -

@@ -10,8 +10,14 @@ variable "apis" {
   type = list(string)
 }
 
-variable "env_secrets" {
-  type = map(string)
+variable "secrets" {
+  type = object({
+    PORTAL_USERNAME         = string,
+    PORTAL_PASSWORD         = string,
+    PORTAL_LOGIN_URL        = string,
+    PORTAL_HOME_URL         = string,
+    CREDIT_TRANSACTIONS_URL = string,
+  })
 }
 
 variable "service_image" {
