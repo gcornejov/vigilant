@@ -37,10 +37,34 @@ resource "google_storage_bucket_iam_member" "robot_object_creator" {
   member = "serviceAccount:${google_service_account.vigilant_robot.email}"
 }
 
-resource "google_secret_manager_secret_iam_member" "secret_access" {
-  for_each = var.env_secrets
+locals {
+  secrets_map = {
+    for key, value in var.secrets :
+    key => value
+  }
+}
 
-  secret_id = each.value
+resource "google_secret_manager_secret" "secrets" {
+  for_each = local.secrets_map
+
+  secret_id = each.key
+  replication {
+    auto {}
+  }
+  deletion_protection = false
+}
+
+resource "google_secret_manager_secret_version" "secrets_version" {
+  for_each = local.secrets_map
+
+  secret      = google_secret_manager_secret.secrets[each.key].id
+  secret_data = each.value
+}
+
+resource "google_secret_manager_secret_iam_member" "secrets_access" {
+  for_each = local.secrets_map
+
+  secret_id = google_secret_manager_secret.secrets[each.key].id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.vigilant_robot.email}"
 }
@@ -87,14 +111,14 @@ resource "google_cloud_run_v2_service" "vigilant_robot" {
       }
 
       dynamic "env" {
-        for_each = var.env_secrets
+        for_each = local.secrets_map
 
         content {
           name = env.key
 
           value_source {
             secret_key_ref {
-              secret  = env.value
+              secret  = google_secret_manager_secret.secrets[env.key].name
               version = "latest"
             }
           }

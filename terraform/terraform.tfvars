@@ -11,11 +11,3 @@ apis = [
   "cloudbuild.googleapis.com",
   "run.googleapis.com",
 ]
-
-env_secrets = {
-  PORTAL_USERNAME         = "PORTAL_USERNAME"
-  PORTAL_PASSWORD         = "PORTAL_PASSWORD"
-  PORTAL_LOGIN_URL        = "PORTAL_LOGIN_URL"
-  PORTAL_HOME_URL         = "PORTAL_HOME_URL"
-  CREDIT_TRANSACTIONS_URL = "CREDIT_TRANSACTIONS_URL"
-}
