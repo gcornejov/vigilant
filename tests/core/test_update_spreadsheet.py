@@ -5,12 +5,12 @@ from unittest import mock
 import pandas as pd
 import pytest
 
-from vigilant import update_spreadsheet
+from vigilant.core import update_spreadsheet
 from vigilant.common.values import BalanceSpreadsheet, IOResources
 
 
-@mock.patch("vigilant.update_spreadsheet.SpreadSheet")
-@mock.patch("vigilant.update_spreadsheet.update_balance_spreadsheet")
+@mock.patch("vigilant.core.update_spreadsheet.SpreadSheet")
+@mock.patch("vigilant.core.update_spreadsheet.update_balance_spreadsheet")
 def test_main(
     update_balance_spreadsheet: mock.MagicMock,
     SpreadSheet: mock.MagicMock,
@@ -23,12 +23,15 @@ def test_main(
     mock_spreadsheet = mock.MagicMock()
     SpreadSheet.load.return_value = mock_spreadsheet
 
-    monkeypatch.setattr("vigilant.update_spreadsheet.load_amount", lambda: mock_amount)
     monkeypatch.setattr(
-        "vigilant.update_spreadsheet.find_expenses_file", lambda: mock_expenses_filepath
+        "vigilant.core.update_spreadsheet.load_amount", lambda: mock_amount
     )
     monkeypatch.setattr(
-        "vigilant.update_spreadsheet.prepare_expenses", lambda *_: mock_expenses
+        "vigilant.core.update_spreadsheet.find_expenses_file",
+        lambda: mock_expenses_filepath,
+    )
+    monkeypatch.setattr(
+        "vigilant.core.update_spreadsheet.prepare_expenses", lambda *_: mock_expenses
     )
 
     update_spreadsheet.main()
@@ -64,7 +67,7 @@ def test_find_expenses_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
     assert isinstance(expenses_file, Path) and expenses_file.name == mock_expenses_file
 
 
-@mock.patch("vigilant.update_spreadsheet.pd.read_excel")
+@mock.patch("vigilant.core.update_spreadsheet.pd.read_excel")
 def test_prepare_expenses(mock_pd_read_excel: mock.MagicMock) -> None:
     mock_path = Path("/")
     mock_cols_keys: tuple[str] = ("date", "description", "location", "amount")
@@ -101,7 +104,7 @@ def test_prepare_expenses(mock_pd_read_excel: mock.MagicMock) -> None:
     assert expenses == mock_expenses
 
 
-@mock.patch("vigilant.update_spreadsheet.SpreadSheet")
+@mock.patch("vigilant.core.update_spreadsheet.SpreadSheet")
 def test_update_balance_spreadsheet(SpreadSheet: mock.MagicMock) -> None:
     mock_spreadsheet = mock.MagicMock()
     SpreadSheet.load.return_value = mock_spreadsheet

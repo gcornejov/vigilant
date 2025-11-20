@@ -3,7 +3,7 @@ from unittest import mock
 
 import pytest
 
-from vigilant import data_collector
+from vigilant.core import data_collector
 from vigilant.common.exceptions import DriverException
 from vigilant.common.values import IOResources
 
@@ -13,11 +13,11 @@ def mock_page() -> mock.MagicMock:
     return mock.MagicMock()
 
 
-@mock.patch("vigilant.data_collector.session")
-@mock.patch("vigilant.data_collector.clear_resources")
-@mock.patch("vigilant.data_collector.login")
-@mock.patch("vigilant.data_collector.get_current_amount")
-@mock.patch("vigilant.data_collector.get_credit_transactions")
+@mock.patch("vigilant.core.data_collector.session")
+@mock.patch("vigilant.core.data_collector.clear_resources")
+@mock.patch("vigilant.core.data_collector.login")
+@mock.patch("vigilant.core.data_collector.get_current_amount")
+@mock.patch("vigilant.core.data_collector.get_credit_transactions")
 def test_main(
     get_credit_transactions: mock.MagicMock,
     get_current_amount: mock.MagicMock,
@@ -34,7 +34,7 @@ def test_main(
     get_credit_transactions.assert_called_once()
 
 
-@mock.patch("vigilant.data_collector.sync_playwright")
+@mock.patch("vigilant.core.data_collector.sync_playwright")
 def test_session(
     mock_sync_playwright: mock.MagicMock, mock_page: mock.MagicMock
 ) -> None:
@@ -61,8 +61,8 @@ def test_session(
     mock_page.set_default_timeout.assert_called_once_with(data_collector.WAIT_TIMEOUT)
 
 
-@mock.patch("vigilant.data_collector.sync_playwright")
-@mock.patch("vigilant.data_collector.take_screenshot")
+@mock.patch("vigilant.core.data_collector.sync_playwright")
+@mock.patch("vigilant.core.data_collector.take_screenshot")
 def test_session_exception(
     mock_take_screenshot: mock.MagicMock, mock_sync_playwright: mock.MagicMock
 ) -> None:
