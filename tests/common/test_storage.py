@@ -4,7 +4,7 @@ from unittest import mock
 
 import pytest
 
-from vigilant.common.storage import GoogleCloudStorage, LocalStorage
+from vigilant.common.storage import GoogleCloudStorage, LocalStorage, clear_resources
 
 
 def test_local_storage() -> None:
@@ -61,3 +61,14 @@ class TestGoogleCloudStorage:
         object_uri: str = GoogleCloudStorage._build_object_uri(file_path)
 
         assert f"{bucket_name}/{file_path}" in object_uri
+
+
+def test_clear_resources(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    tmp_file: Path = tmp_path / "test_file.txt"
+    tmp_file.write_text("Hesitation is defeat!")
+
+    monkeypatch.setattr("vigilant.common.values.IOResources.DATA_PATH", tmp_path)
+
+    clear_resources()
+
+    assert tmp_path.exists() and not any(tmp_path.iterdir())
