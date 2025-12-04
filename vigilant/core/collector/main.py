@@ -3,9 +3,9 @@ from typing import Type
 from vigilant import logger
 from vigilant.common.browser import session
 from vigilant.common.storage import clear_resources
-from vigilant.core.collector.scraper import BancoChileScraper, Scraper
+from vigilant.core.collector.scraper import BancoChileScraper, CMRScraper, Scraper
 
-scrapers: list[Type[Scraper]] = [BancoChileScraper]
+scrapers: list[Type[Scraper]] = [BancoChileScraper, CMRScraper]
 
 
 def collect() -> None:
