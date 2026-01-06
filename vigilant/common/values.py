@@ -27,9 +27,6 @@ class IOResources:
     DATA_DIR: Final[str] = "data_collection"
     DATA_PATH: Final[Path] = APP_ROOT_PATH / DATA_DIR
 
-    AMOUNT_FILENAME: Final[str] = "account_amount.txt"
-    TRANSACTIONS_FILENAME: Final[str] = "transactions.xls"
-
 
 class BalanceSpreadsheet:
     KEY: Final[str] = "1IKyPmWeaZ_5IRa4I4EOgVwu5oGZ9RSQqQxjRu9P4qY4"

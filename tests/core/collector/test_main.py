@@ -11,6 +11,8 @@ from vigilant.core.collector.scraper.scraper import Scraper
 @pytest.fixture
 def mock_scraper() -> Type[Scraper]:
     class MockScraper(Scraper):
+        directory = Path("/tmp/scraper")
+
         def navigate(self): ...
 
     return MockScraper

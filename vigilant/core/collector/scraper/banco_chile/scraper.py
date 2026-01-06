@@ -1,17 +1,20 @@
 from contextlib import suppress
+from pathlib import Path
 
 from playwright.sync_api import TimeoutError
 
 from vigilant import logger
-from vigilant.common.values import IOResources
 from vigilant.core.collector.scraper.banco_chile.values import (
     Locators,
     Secrets,
+    IOResources,
 )
 from vigilant.core.collector.scraper import Scraper
 
 
 class BancoChileScraper(Scraper):
+    directory: Path = IOResources.SCRAPER_DATA_PATH
+
     def navigate(self) -> None:
         self._login()
         self._get_current_amount()
@@ -44,7 +47,7 @@ class BancoChileScraper(Scraper):
         account_amount: str = self.page.locator(
             Locators.AMOUNT_TEXT_CLASS
         ).first.text_content()
-        (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).write_text(
+        IOResources.AMOUNT_PATH.write_text(
             account_amount.replace(".", "").replace("$", "").strip()
         )
 
@@ -58,6 +61,4 @@ class BancoChileScraper(Scraper):
         with self.page.expect_download() as download_info:
             self.page.locator(Locators.DOWNLOAD_BTN_XPATH).click()
 
-        download_info.value.save_as(
-            IOResources.DATA_PATH / IOResources.TRANSACTIONS_FILENAME
-        )
+        download_info.value.save_as(IOResources.TRANSACTIONS_PATH)

@@ -3,8 +3,8 @@ from unittest import mock
 
 import pytest
 
-from vigilant.common.values import IOResources
 from vigilant.core.collector.scraper import BancoChileScraper
+from vigilant.core.collector.scraper.banco_chile.values import IOResources
 
 
 @mock.patch("vigilant.core.collector.scraper.BancoChileScraper._login")
@@ -46,10 +46,13 @@ def test_get_current_amount(
         mock_formatted_amount
     )
 
-    monkeypatch.setattr("vigilant.common.values.IOResources.DATA_PATH", tmp_path)
+    monkeypatch.setattr(
+        "vigilant.core.collector.scraper.banco_chile.values.IOResources.AMOUNT_PATH",
+        (tmp_path / "tmp_file"),
+    )
 
     BancoChileScraper(mock_page)._get_current_amount()
-    amount: str = (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).read_text()
+    amount: str = IOResources.AMOUNT_PATH.read_text()
 
     assert amount == mock_amount
 
@@ -59,7 +62,10 @@ def test_get_credit_transactions(
 ) -> None:
     (tmp_path / IOResources.TRANSACTIONS_FILENAME).write_text("Hesitation is defeat!")
 
-    monkeypatch.setattr("vigilant.common.values.IOResources.DATA_PATH", tmp_path)
+    monkeypatch.setattr(
+        "vigilant.core.collector.scraper.banco_chile.values.IOResources.TRANSACTIONS_PATH",
+        (tmp_path / "tmp_file"),
+    )
 
     mock_download_info = mock.MagicMock()
     mock_page.expect_download.return_value.__enter__.return_value = mock_download_info
@@ -69,5 +75,5 @@ def test_get_credit_transactions(
     mock_page.goto.assert_called_once()
     mock_page.locator().click.assert_called()
     mock_download_info.value.save_as.assert_called_once_with(
-        IOResources.DATA_PATH / IOResources.TRANSACTIONS_FILENAME
+        IOResources.TRANSACTIONS_PATH
     )

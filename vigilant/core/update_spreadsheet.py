@@ -1,17 +1,16 @@
-from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
 from vigilant import logger
 from vigilant.common.spreadsheet import SpreadSheet
-from vigilant.common.values import BalanceSpreadsheet, IOResources
+from vigilant.common.values import BalanceSpreadsheet
+from vigilant.core.collector.scraper.banco_chile.values import IOResources
 
 
 def main() -> None:
     """Load expenses data into a google spreadsheet"""
     current_amount: str = load_amount()
-    expenses_filepath: Path = find_expenses_file()
     spreadsheet = SpreadSheet.load(BalanceSpreadsheet.KEY)
 
     payment_descriptions: list[str] = [
@@ -21,9 +20,7 @@ def main() -> None:
             BalanceSpreadsheet.PAYMENT_DESC_RANGE,
         )
     ]
-    expenses: list[list[Any]] = prepare_expenses(
-        expenses_filepath, payment_descriptions
-    )
+    expenses: list[list[Any]] = prepare_expenses(payment_descriptions)
 
     logger.info("Updating spreadsheet ...")
     update_balance_spreadsheet(spreadsheet, current_amount, expenses)
@@ -35,22 +32,11 @@ def load_amount() -> int:
     Returns:
         int: Checking account amount
     """
-    raw_amount: str = (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).read_text()
+    raw_amount: str = (IOResources.AMOUNT_PATH).read_text()
     return int(raw_amount)
 
 
-def find_expenses_file() -> Path:
-    """Find file path containing the expenses
-
-    Returns:
-        Path: Expenses file path
-    """
-    return next(IOResources.DATA_PATH.glob("*.xls"))
-
-
-def prepare_expenses(
-    expenses_filepath: Path, description_ignore: list[str]
-) -> list[list[str]]:
+def prepare_expenses(description_ignore: list[str]) -> list[list[str]]:
     """Load expenses data from file and prepares it to load
 
     Args:
@@ -64,7 +50,7 @@ def prepare_expenses(
     EXPENSES_COLUMNS_KEYS: tuple[str] = ("date", "description", "location", "amount")
 
     expenses: pd.DataFrame = pd.read_excel(
-        expenses_filepath,
+        IOResources.TRANSACTIONS_PATH,
         sheet_name=0,
         header=17,
         names=EXPENSES_COLUMNS_KEYS,

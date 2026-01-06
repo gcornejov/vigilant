@@ -6,7 +6,8 @@ import pandas as pd
 import pytest
 
 from vigilant.core import update_spreadsheet
-from vigilant.common.values import BalanceSpreadsheet, IOResources
+from vigilant.common.values import BalanceSpreadsheet
+from vigilant.core.collector.scraper.banco_chile.values import IOResources
 
 
 @mock.patch("vigilant.core.update_spreadsheet.SpreadSheet")
@@ -17,7 +18,6 @@ def test_main(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     mock_amount: int = 1000
-    mock_expenses_filepath = Path("/tmp/expenses.xls")
     mock_expenses: list[list[Any]] = [["store", 100]]
 
     mock_spreadsheet = mock.MagicMock()
@@ -25,10 +25,6 @@ def test_main(
 
     monkeypatch.setattr(
         "vigilant.core.update_spreadsheet.load_amount", lambda: mock_amount
-    )
-    monkeypatch.setattr(
-        "vigilant.core.update_spreadsheet.find_expenses_file",
-        lambda: mock_expenses_filepath,
     )
     monkeypatch.setattr(
         "vigilant.core.update_spreadsheet.prepare_expenses", lambda *_: mock_expenses
@@ -48,28 +44,21 @@ def test_main(
 def test_load_amount(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     mock_amount: int = 1000
 
-    monkeypatch.setattr("vigilant.common.values.IOResources.DATA_PATH", tmp_path)
-    (IOResources.DATA_PATH / IOResources.AMOUNT_FILENAME).write_text(str(mock_amount))
+    monkeypatch.setattr(
+        "vigilant.core.collector.scraper.banco_chile.values.IOResources.AMOUNT_PATH",
+        (tmp_path / "tmp_file"),
+    )
+    IOResources.AMOUNT_PATH.write_text(str(mock_amount))
 
     amount: str = update_spreadsheet.load_amount()
 
     assert amount == mock_amount
 
 
-def test_find_expenses_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    mock_expenses_file: str = "mock.xls"
-
-    monkeypatch.setattr("vigilant.common.values.IOResources.DATA_PATH", tmp_path)
-    (tmp_path / mock_expenses_file).write_text("")
-
-    expenses_file: Path = update_spreadsheet.find_expenses_file()
-
-    assert isinstance(expenses_file, Path) and expenses_file.name == mock_expenses_file
-
-
 @mock.patch("vigilant.core.update_spreadsheet.pd.read_excel")
-def test_prepare_expenses(mock_pd_read_excel: mock.MagicMock) -> None:
-    mock_path = Path("/")
+def test_prepare_expenses(
+    mock_pd_read_excel: mock.MagicMock, monkeypatch: pytest.MonkeyPatch
+) -> None:
     mock_cols_keys: tuple[str] = ("date", "description", "location", "amount")
     mock_cols_index: tuple[str] = (1, 4, 6, 10)
 
@@ -90,8 +79,13 @@ def test_prepare_expenses(mock_pd_read_excel: mock.MagicMock) -> None:
 
     mock_pd_read_excel.return_value = mock_data_df
 
+    monkeypatch.setattr(
+        "vigilant.core.collector.scraper.banco_chile.values.IOResources.TRANSACTIONS_PATH",
+        Path("/"),
+    )
+
     expenses: list[list[Any]] = update_spreadsheet.prepare_expenses(
-        mock_path, mock_payment_description
+        mock_payment_description
     )
 
     mock_pd_read_excel.assert_called_once_with(
