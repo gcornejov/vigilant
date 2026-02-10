@@ -27,6 +27,9 @@ class IOResources:
     DATA_DIR: Final[str] = "data_collection"
     DATA_PATH: Final[Path] = APP_ROOT_PATH / DATA_DIR
 
+    OUTPUT_DIR: Final[str] = "output"
+    OUTPUT_PATH: Final[Path] = APP_ROOT_PATH / OUTPUT_DIR
+
 
 class BalanceSpreadsheet:
     KEY: Final[str] = "1IKyPmWeaZ_5IRa4I4EOgVwu5oGZ9RSQqQxjRu9P4qY4"
@@ -37,7 +40,7 @@ class BalanceSpreadsheet:
 
     EXPENSES_WORKSHEET_NAME: Final[str] = "Gastos"
 
-    AMOUNT_CELL: Final[str] = "I2"
+    AMOUNT_CELL: Final[str] = "J2"
     EXPENSES_CELL: Final[str] = "B3"
 
 

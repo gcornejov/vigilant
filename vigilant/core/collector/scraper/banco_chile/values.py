@@ -1,7 +1,6 @@
-from pathlib import Path
 from typing import Final
 
-from vigilant.common.values import IOResources as VigilantIOResources, MetaEnvironment
+from vigilant.common.values import MetaEnvironment
 
 
 class Secrets(metaclass=MetaEnvironment):
@@ -33,11 +32,5 @@ class Locators:
 
 
 class IOResources:
-    SCRAPER_DIRECTORY: Final[str] = "banco_chile"
-    AMOUNT_FILENAME: Final[str] = "account_amount.txt"
     TRANSACTIONS_FILENAME: Final[str] = "transactions.xls"
-
-    SCRAPER_DATA_PATH: Final[Path] = VigilantIOResources.DATA_PATH / SCRAPER_DIRECTORY
-
-    AMOUNT_PATH: Final[Path] = SCRAPER_DATA_PATH / AMOUNT_FILENAME
-    TRANSACTIONS_PATH: Final[Path] = SCRAPER_DATA_PATH / TRANSACTIONS_FILENAME
+    OUTPUT_FILENAME: Final[str] = "banco_chile.json"

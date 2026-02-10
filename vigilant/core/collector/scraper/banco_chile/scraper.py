@@ -1,9 +1,16 @@
 from contextlib import suppress
-from pathlib import Path
+from typing import Final
 
+import pandas as pd
 from playwright.sync_api import TimeoutError
 
 from vigilant import logger
+from vigilant.common.models import AccountData, Transaction
+from vigilant.common.spreadsheet import SpreadSheet
+from vigilant.common.values import (
+    BalanceSpreadsheet,
+    IOResources as VigilantIOResources,
+)
 from vigilant.core.collector.scraper.banco_chile.values import (
     Locators,
     Secrets,
@@ -13,12 +20,14 @@ from vigilant.core.collector.scraper import Scraper
 
 
 class BancoChileScraper(Scraper):
-    directory: Path = IOResources.SCRAPER_DATA_PATH
+    amount: int
+    identifier: Final[str] = "Chile"
 
     def navigate(self) -> None:
         self._login()
         self._get_current_amount()
         self._get_credit_transactions()
+        self._save()
 
     def _login(self) -> None:
         """Login to Web portal"""
@@ -44,11 +53,12 @@ class BancoChileScraper(Scraper):
             )
             self.page.keyboard.press("Escape")
 
-        account_amount: str = self.page.locator(
-            Locators.AMOUNT_TEXT_CLASS
-        ).first.text_content()
-        IOResources.AMOUNT_PATH.write_text(
-            account_amount.replace(".", "").replace("$", "").strip()
+        self.amount = int(
+            self.page.locator(Locators.AMOUNT_TEXT_CLASS)
+            .first.text_content()
+            .replace(".", "")
+            .replace("$", "")
+            .strip()
         )
 
     def _get_credit_transactions(self) -> None:
@@ -61,4 +71,52 @@ class BancoChileScraper(Scraper):
         with self.page.expect_download() as download_info:
             self.page.locator(Locators.DOWNLOAD_BTN_XPATH).click()
 
-        download_info.value.save_as(IOResources.TRANSACTIONS_PATH)
+        download_info.value.save_as(self.data_path / IOResources.TRANSACTIONS_FILENAME)
+
+    def _save(self) -> None:
+        """Structure and saves collected data in a json file"""
+        logger.info("Saving data ...")
+
+        EXPENSES_COLUMNS_INDEX: tuple[str] = (1, 4, 6, 10)
+        EXPENSES_COLUMNS_KEYS: tuple[str] = (
+            "date",
+            "description",
+            "location",
+            "amount",
+        )
+
+        expenses: pd.DataFrame = pd.read_excel(
+            self.data_path / IOResources.TRANSACTIONS_FILENAME,
+            sheet_name=0,
+            header=17,
+            names=EXPENSES_COLUMNS_KEYS,
+            usecols=EXPENSES_COLUMNS_INDEX,
+        )
+
+        spreadsheet = SpreadSheet.load(BalanceSpreadsheet.KEY)
+        payment_descriptions: list[str] = [
+            desc.pop()
+            for desc in spreadsheet.read(
+                BalanceSpreadsheet.DATA_WORKSHEET_NAME,
+                BalanceSpreadsheet.PAYMENT_DESC_RANGE,
+            )
+        ]
+
+        expenses = expenses[(~expenses.description.isin(payment_descriptions))].fillna(
+            ""
+        )
+
+        account_data = AccountData(
+            identifier=self.identifier,
+            amount=self.amount,
+            transactions=[
+                Transaction(
+                    **dict(zip(list(Transaction.model_fields), raw_transaction))
+                )
+                for raw_transaction in expenses.values.tolist()
+            ],
+        )
+
+        (VigilantIOResources.OUTPUT_PATH / IOResources.OUTPUT_FILENAME).write_text(
+            account_data.model_dump_json()
+        )
