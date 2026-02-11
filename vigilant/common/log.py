@@ -3,20 +3,31 @@ from typing import Final
 
 from vigilant.common.values import Environment
 
-APP_NAME: Final[str] = "vigilant"
+APP_NAME: Final[str] = "Vigilant"
 LOG_LEVEL: Final[str] = "LOG_LEVEL"
 DEFAULT_LOG_LEVEL: Final[int] = 20
 
 
+class _DefaultContextFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        if not hasattr(record, "role"):
+            record.role = "App"
+        if not hasattr(record, "entity"):
+            record.entity = APP_NAME
+        return True
+
+
 def build_logger() -> logging.Logger:
     formatter = logging.Formatter(
-        "%(levelname)s - [%(asctime)s] - %(message)s", "%Y-%m-%d %H:%M:%S"
+        "%(levelname)s - [%(asctime)s] - %(role)s - %(entity)s - %(message)s",
+        "%Y-%m-%d %H:%M:%S",
     )
 
     handler = logging.StreamHandler()
     handler.setFormatter(formatter)
+    handler.addFilter(_DefaultContextFilter())
 
-    logger = logging.getLogger(APP_NAME)
+    logger = logging.getLogger()
     logger.addHandler(handler)
 
     log_level: int = _get_loglevel()
