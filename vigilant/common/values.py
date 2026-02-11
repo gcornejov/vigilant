@@ -43,7 +43,7 @@ class Locators:
         '//*[@id="mat-dialog-0"]/fenix-modal-zona-emergente/div/div/div/button'
     )
     DOWNLOAD_GROUP_BTN_XPATH: Final[str] = (
-        '//*[@id="mat-tab-content-0-0"]/div/div/fenix-movimientos-no-facturados-tabla/div[1]/div[1]/div[2]/bch-button'
+        '//*[@id="mat-tab-content-1-0"]/div/fenix-movimientos-no-facturados-tabla/div[1]/div[1]/div[2]/bch-button'
     )
     DOWNLOAD_BTN_XPATH: Final[str] = '//*[@id="cdk-overlay-0"]/div/div/button[1]'
 
