@@ -16,8 +16,8 @@ resource "google_service_account" "vigilant_robot" {
 }
 
 resource "google_storage_bucket" "browser_screenshots" {
-  name                     = "vigilant-295410116663"
-  location                 = "US"
+  name                     = "vigilant-${var.project_number}"
+  location                 = var.gcs_location
   force_destroy            = true
   public_access_prevention = "enforced"
 
