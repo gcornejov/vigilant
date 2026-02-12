@@ -25,6 +25,10 @@ variable "secrets" {
     PORTAL_LOGIN_URL        = string,
     PORTAL_HOME_URL         = string,
     CREDIT_TRANSACTIONS_URL = string,
+    CMR_PORTAL_USERNAME     = string,
+    CMR_PORTAL_PASSWORD     = string,
+    CMR_PORTAL_LOGIN_URL    = string,
+    CMR_PORTAL_HOME_URL     = string,
   })
 }
 
