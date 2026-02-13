@@ -4,7 +4,6 @@ from typing import Final
 import pandas as pd
 from playwright.sync_api import TimeoutError
 
-from vigilant import logger
 from vigilant.common.models import AccountData, Transaction
 from vigilant.common.spreadsheet import SpreadSheet
 from vigilant.common.values import (
@@ -31,7 +30,7 @@ class BancoChileScraper(Scraper):
 
     def _login(self) -> None:
         """Login to Web portal"""
-        logger.info("Logging in ...")
+        self.logger.info("Logging in ...")
 
         self.page.goto(Secrets.LOGIN_URL)
 
@@ -45,7 +44,7 @@ class BancoChileScraper(Scraper):
         """Collect current account amount and save it in a file"""
         BANNER_WAIT_TIMEOUT: float = 3000.0
 
-        logger.info("Getting current amount ...")
+        self.logger.info("Getting current amount ...")
 
         with suppress(TimeoutError):
             self.page.locator(Locators.PROMOTION_BANNER_CLASS).wait_for(
@@ -63,7 +62,7 @@ class BancoChileScraper(Scraper):
 
     def _get_credit_transactions(self) -> None:
         """Collect current transactions on credit card"""
-        logger.info("Getting transactions ...")
+        self.logger.info("Getting transactions ...")
 
         self.page.goto(Secrets.CREDIT_TRANSACTIONS_URL)
         self.page.locator(Locators.DOWNLOAD_GROUP_BTN_XPATH).click()
@@ -75,7 +74,7 @@ class BancoChileScraper(Scraper):
 
     def _save(self) -> None:
         """Structure and saves collected data in a json file"""
-        logger.info("Saving data ...")
+        self.logger.info("Saving data ...")
 
         EXPENSES_COLUMNS_INDEX: tuple[str] = (1, 4, 6, 10)
         EXPENSES_COLUMNS_KEYS: tuple[str] = (

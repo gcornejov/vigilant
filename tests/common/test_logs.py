@@ -22,7 +22,8 @@ def test_build_logger(mock_get_loglevel: mock.MagicMock) -> None:
     formatter: logging.Formatter = handler.formatter
     assert (
         formatter.datefmt == "%Y-%m-%d %H:%M:%S"
-        and formatter._fmt == "%(levelname)s - [%(asctime)s] - %(message)s"
+        and formatter._fmt
+        == "%(levelname)s - [%(asctime)s] - %(role)s - %(entity)s - %(message)s"
     )
 
 
