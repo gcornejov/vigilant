@@ -1,0 +1,18 @@
+{
+    "identifier": "Falabella",
+    "amount": 0,
+    "transactions": [
+        {
+            "date": "31/12/1999",
+            "description": "Clothes",
+            "location": "",
+            "amount": 25000
+        },
+        {
+            "date": "24/12/1999",
+            "description": "Food",
+            "location": "",
+            "amount": 40000
+        }
+    ]
+}
