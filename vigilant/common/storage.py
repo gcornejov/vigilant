@@ -1,10 +1,11 @@
+import shutil
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Final
 
 from google.cloud import storage
 
-from vigilant.common.values import Environment
+from vigilant.common.values import Environment, IOResources
 
 DEFAULT_PATH: Final[str] = "."
 
@@ -57,3 +58,12 @@ class GoogleCloudStorage(Storage):
         GCS_BASE_URL: Final[str] = "https://storage.cloud.google.com"
 
         return f"{GCS_BASE_URL}/{Environment.BUCKET_NAME}/{object_path}"
+
+
+def clear_resources() -> None:
+    """Setup resources directory for data persistence"""
+    shutil.rmtree(IOResources.DATA_PATH, ignore_errors=True)
+    shutil.rmtree(IOResources.OUTPUT_PATH, ignore_errors=True)
+
+    IOResources.DATA_PATH.mkdir(parents=True, exist_ok=True)
+    IOResources.OUTPUT_PATH.mkdir(parents=True, exist_ok=True)

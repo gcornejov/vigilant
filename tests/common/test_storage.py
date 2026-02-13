@@ -4,11 +4,11 @@ from unittest import mock
 
 import pytest
 
-from vigilant.common.storage import GoogleCloudStorage, LocalStorage
+from vigilant.common.storage import GoogleCloudStorage, LocalStorage, clear_resources
 
 
 def test_local_storage() -> None:
-    image_path: str = tempfile.mktemp(suffix=".png")
+    _, image_path = tempfile.mkstemp(suffix=".png")
     image_data: bytes = b"rgb_data"
 
     storage = LocalStorage()
@@ -26,7 +26,7 @@ class TestGoogleCloudStorage:
     def test_gcs_storage(
         self, gcs_storage: mock.MagicMock, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        image_path: str = tempfile.mktemp(suffix=".png")
+        _, image_path = tempfile.mkstemp(suffix=".png")
         image_data: bytes = b"rgb_data"
 
         mock_bucket = mock.MagicMock()
@@ -61,3 +61,23 @@ class TestGoogleCloudStorage:
         object_uri: str = GoogleCloudStorage._build_object_uri(file_path)
 
         assert f"{bucket_name}/{file_path}" in object_uri
+
+
+def test_clear_resources(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    tmp_data_path: Path = tmp_path / "data"
+    tmp_data_file: Path = tmp_path / "test_file.txt"
+    tmp_data_file.write_text("Hesitation is defeat!")
+
+    tmp_output_path: Path = tmp_path / "output"
+    tmp_output_file: Path = tmp_path / "test_file.txt"
+    tmp_output_file.write_text("Hesitation is defeat!")
+
+    monkeypatch.setattr("vigilant.common.values.IOResources.DATA_PATH", tmp_data_path)
+    monkeypatch.setattr(
+        "vigilant.common.values.IOResources.OUTPUT_PATH", tmp_output_path
+    )
+
+    clear_resources()
+
+    assert tmp_data_path.exists() and not any(tmp_data_path.iterdir())
+    assert tmp_output_path.exists() and not any(tmp_output_path.iterdir())
