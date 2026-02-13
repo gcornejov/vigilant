@@ -1,5 +1,7 @@
-project_id = "evocative-line-451302-f3"
-location   = "us-central1"
+project_id     = "evocative-line-451302-f3"
+project_number = "295410116663"
+location       = "southamerica-west1"
+gcs_location   = "SOUTHAMERICA-WEST1"
 
 apis = [
   "iam.googleapis.com",
