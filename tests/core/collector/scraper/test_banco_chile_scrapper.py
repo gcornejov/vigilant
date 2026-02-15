@@ -15,20 +15,30 @@ def mock_bank_chile_data() -> dict:
     return json.loads(Path("tests/resources/bank_chile.json").read_text())
 
 
+@pytest.mark.asyncio
 @mock.patch("vigilant.core.collector.scraper.BancoChileScraper._login")
 @mock.patch("vigilant.core.collector.scraper.BancoChileScraper._get_current_amount")
 @mock.patch(
     "vigilant.core.collector.scraper.BancoChileScraper._get_credit_transactions"
 )
 @mock.patch("vigilant.core.collector.scraper.BancoChileScraper._save")
-def test_navigate(
+async def test_navigate(
     _save: mock.MagicMock,
     _get_credit_transactions: mock.MagicMock,
     _get_current_amount: mock.MagicMock,
     _login: mock.MagicMock,
     mock_page: mock.MagicMock,
 ) -> None:
-    BancoChileScraper(mock_page).navigate()
+    # Configure mocks to be async
+    _login.side_effect = None
+    _login.return_value = None
+    _get_current_amount.side_effect = None
+    _get_current_amount.return_value = None
+    _get_credit_transactions.side_effect = None
+    _get_credit_transactions.return_value = None
+    _save.return_value = None
+
+    await BancoChileScraper(mock_page).navigate()
 
     _save.assert_called_once()
     _login.assert_called_once()
@@ -36,8 +46,15 @@ def test_navigate(
     _get_credit_transactions.assert_called_once()
 
 
-def test_login(mock_page: mock.MagicMock) -> None:
-    BancoChileScraper(mock_page)._login()
+@pytest.mark.asyncio
+async def test_login(mock_page: mock.MagicMock) -> None:
+    mock_page.goto = mock.AsyncMock()
+    mock_page.locator = mock.MagicMock()
+    mock_page.locator().fill = mock.AsyncMock()
+    mock_page.locator().click = mock.AsyncMock()
+    mock_page.wait_for_url = mock.AsyncMock()
+
+    await BancoChileScraper(mock_page)._login()
 
     mock_page.goto.assert_called_once()
     mock_page.locator().fill.assert_called()
@@ -45,36 +62,62 @@ def test_login(mock_page: mock.MagicMock) -> None:
     mock_page.wait_for_url.assert_called_once()
 
 
-def test_get_current_amount(
+@pytest.mark.asyncio
+async def test_get_current_amount(
     mock_page: mock.MagicMock,
 ) -> None:
     mock_formatted_amount: str = " $1.000"
     mock_amount: int = 1000
 
-    mock_page.locator.return_value.first.text_content.return_value = (
-        mock_formatted_amount
-    )
+    # Mock the locator chain for async
+    mock_locator = mock.MagicMock()
+    mock_first = mock.MagicMock()
+
+    # text_content() is an async function that we need to mock
+    async def mock_text_content():
+        return mock_formatted_amount
+
+    mock_first.text_content = mock.MagicMock(side_effect=mock_text_content)
+    mock_locator.first = mock_first
+    mock_locator.wait_for = mock.AsyncMock()  # Mock the wait_for async method
+    mock_page.locator = mock.MagicMock(return_value=mock_locator)
+    mock_page.keyboard = mock.MagicMock()
+    mock_page.keyboard.press = mock.AsyncMock()
 
     scraper = BancoChileScraper(mock_page)
-    scraper._get_current_amount()
+    await scraper._get_current_amount()
 
     assert scraper.amount == mock_amount
 
 
-def test_get_credit_transactions(tmp_path: Path, mock_page: mock.MagicMock) -> None:
+@pytest.mark.asyncio
+async def test_get_credit_transactions(
+    tmp_path: Path, mock_page: mock.MagicMock
+) -> None:
     (tmp_path / IOResources.TRANSACTIONS_FILENAME).write_text("Hesitation is defeat!")
 
     mock_download_info = mock.MagicMock()
-    mock_page.expect_download.return_value.__enter__.return_value = mock_download_info
+    mock_download_value = mock.MagicMock()
+    mock_download_value.save_as = mock.AsyncMock()
+    mock_download_info.value = mock_download_value
+
+    async_context = mock.MagicMock()
+    async_context.__aenter__ = mock.AsyncMock(return_value=mock_download_info)
+    async_context.__aexit__ = mock.AsyncMock(return_value=None)
+
+    mock_page.goto = mock.AsyncMock()
+    mock_page.locator = mock.MagicMock()
+    mock_page.locator().click = mock.AsyncMock()
+    mock_page.expect_download = mock.MagicMock(return_value=async_context)
 
     scraper = BancoChileScraper(mock_page)
     scraper.data_path = tmp_path
 
-    scraper._get_credit_transactions()
+    await scraper._get_credit_transactions()
 
     mock_page.goto.assert_called_once()
     mock_page.locator().click.assert_called()
-    mock_download_info.value.save_as.assert_called_once_with(
+    mock_download_value.save_as.assert_called_once_with(
         tmp_path / IOResources.TRANSACTIONS_FILENAME
     )
 

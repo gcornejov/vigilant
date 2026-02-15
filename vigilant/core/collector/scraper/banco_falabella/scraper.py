@@ -2,7 +2,7 @@ from contextlib import suppress
 from typing import Final
 
 import pandas as pd
-from playwright.sync_api import Locator, TimeoutError
+from playwright.async_api import Download, Locator, TimeoutError
 
 from vigilant.common.models import AccountData, Transaction
 from vigilant.common.spreadsheet import SpreadSheet
@@ -21,52 +21,53 @@ from vigilant.core.collector.scraper import Scraper
 class BancoFalabellaScraper(Scraper):
     identifier: Final[str] = "Falabella"
 
-    def navigate(self) -> None:
-        self._login()
-        self._get_credit_transactions()
+    async def navigate(self) -> None:
+        await self._login()
+        await self._get_credit_transactions()
         self._save()
 
-    def _login(self) -> None:
+    async def _login(self) -> None:
         """Login to Web portal"""
         self.logger.info("Logging in ...")
 
-        self.page.goto(Secrets.LOGIN_URL)
-        self.page.wait_for_load_state()
+        await self.page.goto(Secrets.LOGIN_URL)
+        await self.page.wait_for_load_state()
 
         login_btn: Locator = self.page.locator(Locators.LOGIN_FORM_BTN_XPATH)
-        login_btn.wait_for(state="visible")
-        login_btn.click()
+        await login_btn.wait_for(state="visible")
+        await login_btn.click()
 
         user_input: Locator = self.page.locator(Locators.USER_INPUT_XPATH).first
-        user_input.wait_for(state="visible")
-        user_input.fill(Secrets.USERNAME)
+        await user_input.wait_for(state="visible")
+        await user_input.fill(Secrets.USERNAME)
 
         password_input: Locator = self.page.locator(Locators.PASSWORD_INPUT_XPATH).first
-        password_input.wait_for(state="visible")
-        password_input.fill(Secrets.PASSWORD)
+        await password_input.wait_for(state="visible")
+        await password_input.fill(Secrets.PASSWORD)
 
-        self.page.locator(Locators.LOGIN_SUBMIT_BTN_ID).first.click()
+        await self.page.locator(Locators.LOGIN_SUBMIT_BTN_ID).first.click()
 
-        self.page.wait_for_url(Secrets.HOME_URL)
+        await self.page.wait_for_url(Secrets.HOME_URL)
 
-    def _get_credit_transactions(self) -> None:
+    async def _get_credit_transactions(self) -> None:
         """Collect current transactions on credit card"""
         BANNER_WAIT_TIMEOUT: float = 3000.0
 
         self.logger.info("Getting transactions ...")
 
         with suppress(TimeoutError):
-            self.page.locator(Locators.PROMOTION_BANNER_XPATH).wait_for(
+            await self.page.locator(Locators.PROMOTION_BANNER_XPATH).wait_for(
                 timeout=BANNER_WAIT_TIMEOUT
             )
-            self.page.locator(Locators.CLOSE_BANNER_BTN_CLASS).click()
+            await self.page.locator(Locators.CLOSE_BANNER_BTN_CLASS).click()
 
-        self.page.locator(Locators.PRODUCT_BTN_CLASS).click()
+        await self.page.locator(Locators.PRODUCT_BTN_CLASS).click()
 
-        with self.page.expect_download() as download_info:
-            self.page.locator(Locators.DOWNLOAD_BTN_CLASS).first.click()
+        async with self.page.expect_download() as download_info:
+            await self.page.locator(Locators.DOWNLOAD_BTN_CLASS).first.click()
 
-        download_info.value.save_as(self.data_path / IOResources.TRANSACTIONS_FILENAME)
+        download: Download = await download_info.value
+        await download.save_as(self.data_path / IOResources.TRANSACTIONS_FILENAME)
 
     def _save(self) -> None:
         """Structure and saves collected data in a json file"""

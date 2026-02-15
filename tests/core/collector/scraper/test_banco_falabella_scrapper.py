@@ -15,25 +15,34 @@ def mock_bank_falabella_data() -> dict:
     return json.loads(Path("tests/resources/bank_falabella.json").read_text())
 
 
+@pytest.mark.asyncio
 @mock.patch("vigilant.core.collector.scraper.BancoFalabellaScraper._login")
 @mock.patch(
     "vigilant.core.collector.scraper.BancoFalabellaScraper._get_credit_transactions"
 )
 @mock.patch("vigilant.core.collector.scraper.BancoFalabellaScraper._save")
-def test_navigate(
+async def test_navigate(
     _save: mock.MagicMock,
     _get_credit_transactions: mock.MagicMock,
     _login: mock.MagicMock,
     mock_page: mock.MagicMock,
 ) -> None:
-    BancoFalabellaScraper(mock_page).navigate()
+    # Configure mocks to be async
+    _login.side_effect = None
+    _login.return_value = None
+    _get_credit_transactions.side_effect = None
+    _get_credit_transactions.return_value = None
+    _save.return_value = None
+
+    await BancoFalabellaScraper(mock_page).navigate()
 
     _save.assert_called_once()
     _login.assert_called_once()
     _get_credit_transactions.assert_called_once()
 
 
-def test_login(mock_page: mock.MagicMock) -> None:
+@pytest.mark.asyncio
+async def test_login(mock_page: mock.MagicMock) -> None:
     mock_login_btn, mock_user_input, mock_password_input, mock_generic_locator = (
         mock.MagicMock(),
         mock.MagicMock(),
@@ -59,11 +68,23 @@ def test_login(mock_page: mock.MagicMock) -> None:
                 return mock_generic_locator
 
     mock_page.locator = mock.MagicMock(side_effect=mock_login_form_locators)
+    mock_page.goto = mock.AsyncMock()
+    mock_page.wait_for_load_state = mock.AsyncMock()
+    mock_page.wait_for_url = mock.AsyncMock()
 
-    BancoFalabellaScraper(mock_page)._login()
+    mock_login_btn.wait_for = mock.AsyncMock()
+    mock_login_btn.click = mock.AsyncMock()
+    mock_user_input.wait_for = mock.AsyncMock()
+    mock_user_input.fill = mock.AsyncMock()
+    mock_password_input.wait_for = mock.AsyncMock()
+    mock_password_input.fill = mock.AsyncMock()
+    mock_generic_locator.first = mock.MagicMock()
+    mock_generic_locator.first.click = mock.AsyncMock()
+
+    await BancoFalabellaScraper(mock_page)._login()
 
     mock_page.goto.assert_called_once()
-    mock_page.wait_for_load_state()
+    mock_page.wait_for_load_state.assert_called_once()
 
     mock_login_btn.wait_for.assert_called_once()
     mock_login_btn.click.assert_called_once()
@@ -78,20 +99,51 @@ def test_login(mock_page: mock.MagicMock) -> None:
     mock_page.wait_for_url.assert_called_once()
 
 
-def test_get_credit_transactions(tmp_path: Path, mock_page: mock.MagicMock) -> None:
+@pytest.mark.asyncio
+async def test_get_credit_transactions(
+    tmp_path: Path, mock_page: mock.MagicMock
+) -> None:
     (tmp_path / IOResources.TRANSACTIONS_FILENAME).write_text("Hesitation is defeat!")
 
+    mock_download_value = mock.MagicMock()
+    mock_download_value.save_as = mock.AsyncMock()
+
     mock_download_info = mock.MagicMock()
-    mock_page.expect_download.return_value.__enter__.return_value = mock_download_info
+    mock_download_info.value = mock_download_value
+
+    # Create an async context manager
+    async def async_cm_enter():
+        return mock_download_info
+
+    async def async_cm_exit(*args):
+        return None
+
+    async_context = mock.MagicMock()
+    async_context.__aenter__ = mock.AsyncMock(side_effect=async_cm_enter)
+    async_context.__aexit__ = mock.AsyncMock(side_effect=async_cm_exit)
+
+    mock_page.goto = mock.AsyncMock()
+
+    # Create a proper mock for locator() returns that has all the necessary async methods
+    def mock_locator_factory(selector=None):
+        locator_mock = mock.MagicMock()
+        locator_mock.wait_for = mock.AsyncMock()
+        locator_mock.click = mock.AsyncMock()
+        # For .first attribute
+        first_mock = mock.MagicMock()
+        first_mock.click = mock.AsyncMock()
+        locator_mock.first = first_mock
+        return locator_mock
+
+    mock_page.locator = mock.MagicMock(side_effect=mock_locator_factory)
+    mock_page.expect_download = mock.MagicMock(return_value=async_context)
 
     scraper = BancoFalabellaScraper(mock_page)
     scraper.data_path = tmp_path
 
-    scraper._get_credit_transactions()
+    await scraper._get_credit_transactions()
 
-    mock_page.locator().wait_for.assert_called_once()
-    mock_page.locator().click.assert_called()
-    mock_download_info.value.save_as.assert_called_once_with(
+    mock_download_value.save_as.assert_called_once_with(
         tmp_path / IOResources.TRANSACTIONS_FILENAME
     )
 

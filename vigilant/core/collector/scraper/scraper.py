@@ -3,7 +3,7 @@ import string
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-from playwright.sync_api import Page
+from playwright.async_api import Page
 
 from vigilant.common.values import IOResources
 from vigilant import logger
@@ -22,10 +22,10 @@ class Scraper(ABC):
             logger.getChild(scraper_name), {"role": "Scraper", "entity": scraper_name}
         )
 
-    def scrap(self) -> None:
+    async def scrap(self) -> None:
         self.data_path.mkdir(parents=True, exist_ok=True)
 
-        self.navigate()
+        await self.navigate()
 
     @abstractmethod
-    def navigate(self) -> None: ...
+    async def navigate(self) -> None: ...

@@ -1,3 +1,4 @@
+import asyncio
 from typing import Type
 
 from vigilant import logger
@@ -12,15 +13,26 @@ from vigilant.core.collector.scraper import (
 scrapers: list[Type[Scraper]] = [BancoChileScraper, BancoFalabellaScraper]
 
 
-def collect() -> None:
-    """Collect accounts data"""
-    with session() as page:
-        clear_resources()
+async def collect() -> None:
+    """Collect accounts data in parallel"""
+    clear_resources()
 
-        logger.info("Collecting transactions data ...")
-        for SPR in scrapers:
-            SPR(page).scrap()
+    logger.info("Collecting transactions data ...")
+
+    # Create async tasks for each scraper
+    tasks = []
+    for SPR in scrapers:
+        tasks.append(_run_scraper(SPR))
+
+    # Run all scrapers concurrently
+    await asyncio.gather(*tasks)
+
+
+async def _run_scraper(scraper_class: Type[Scraper]) -> None:
+    """Run a single scraper with its own browser session"""
+    async with session() as page:
+        await scraper_class(page).scrap()
 
 
 if __name__ == "__main__":
-    collect()
+    asyncio.run(collect())

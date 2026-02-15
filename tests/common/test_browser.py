@@ -7,19 +7,32 @@ from vigilant.common import browser
 from vigilant.common.exceptions import DriverException
 
 
-@mock.patch("vigilant.common.browser.sync_playwright")
-def test_session(
-    mock_sync_playwright: mock.MagicMock, mock_page: mock.MagicMock
+@pytest.mark.asyncio
+@mock.patch("vigilant.common.browser.async_playwright")
+async def test_session(
+    mock_async_playwright: mock.MagicMock, mock_page: mock.MagicMock
 ) -> None:
-    mock_browser = mock.MagicMock()
-    mock_browser.new_context.return_value.new_page.return_value = mock_page
+    mock_browser = mock.AsyncMock()
+    mock_browser.close = mock.AsyncMock()
+
+    mock_context = mock.AsyncMock()
+    mock_context.new_page = mock.AsyncMock(return_value=mock_page)
 
     mock_playwright_session = mock.MagicMock()
-    mock_playwright_session.chromium.launch.return_value = mock_browser
+    mock_playwright_session.chromium.launch = mock.AsyncMock(return_value=mock_browser)
+    mock_playwright_session.chromium = mock.MagicMock()
+    mock_playwright_session.chromium.launch = mock.AsyncMock(return_value=mock_browser)
 
-    mock_sync_playwright.return_value.__enter__.return_value = mock_playwright_session
+    mock_async_playwright_cm = mock.MagicMock()
+    mock_async_playwright_cm.__aenter__ = mock.AsyncMock(
+        return_value=mock_playwright_session
+    )
+    mock_async_playwright_cm.__aexit__ = mock.AsyncMock(return_value=None)
+    mock_async_playwright.return_value = mock_async_playwright_cm
 
-    with browser.session() as session:
+    mock_browser.new_context = mock.AsyncMock(return_value=mock_context)
+
+    async with browser.session() as session:
         assert session == mock_page
 
     mock_playwright_session.chromium.launch.assert_called_once_with(channel="chrome")
@@ -30,45 +43,61 @@ def test_session(
         "AppleWebKit/537.36 (KHTML, like Gecko) "
         "Chrome/123.0.0.0 Safari/537.36",
     )
-    mock_browser.close.assert_called_once_with()
+    mock_browser.close.assert_called_once()
     mock_page.set_default_timeout.assert_called_once_with(browser.WAIT_TIMEOUT)
 
 
-@mock.patch("vigilant.common.browser.sync_playwright")
+@pytest.mark.asyncio
+@mock.patch("vigilant.common.browser.async_playwright")
 @mock.patch("vigilant.common.browser._take_screenshot")
-def test_session_exception(
-    mock_take_screenshot: mock.MagicMock, mock_sync_playwright: mock.MagicMock
+async def test_session_exception(
+    mock_take_screenshot: mock.MagicMock, mock_async_playwright: mock.MagicMock
 ) -> None:
-    mock_browser, mock_playwright_session = mock.MagicMock(), mock.MagicMock()
-    mock_playwright_session.chromium.launch.return_value = mock_browser
+    mock_browser = mock.AsyncMock()
+    mock_browser.close = mock.AsyncMock()
 
-    mock_playwright_context_manager = mock.MagicMock()
-    mock_playwright_context_manager.__enter__.return_value = mock_playwright_session
+    mock_playwright_session = mock.MagicMock()
+    mock_playwright_session.chromium.launch = mock.AsyncMock(return_value=mock_browser)
 
-    mock_sync_playwright.return_value = mock_playwright_context_manager
+    mock_async_playwright_cm = mock.MagicMock()
+    mock_async_playwright_cm.__aenter__ = mock.AsyncMock(
+        return_value=mock_playwright_session
+    )
+    mock_async_playwright_cm.__aexit__ = mock.AsyncMock(return_value=None)
+    mock_async_playwright.return_value = mock_async_playwright_cm
 
+    mock_context = mock.AsyncMock()
+    mock_context.new_page = mock.AsyncMock()
+    mock_browser.new_context = mock.AsyncMock(return_value=mock_context)
+
+    # Make _take_screenshot async
+    mock_take_screenshot.return_value = mock.AsyncMock(return_value="screenshot.png")
+    mock_take_screenshot.side_effect = mock.AsyncMock(return_value="screenshot.png")
+
+    # Need to handle async context manager exception
     with pytest.raises(DriverException):
-        with browser.session() as _:
+        async with browser.session() as _:
             raise Exception
 
     mock_take_screenshot.assert_called_once()
     mock_browser.close.assert_called_once()
 
 
-def test_take_screenshot(
+@pytest.mark.asyncio
+async def test_take_screenshot(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mock_page: mock.MagicMock
 ):
     screenshot_filename: str = "test_sc.png"
     screenshot_path: Path = tmp_path / screenshot_filename
     image_data: bytes = b"Hesitation is defeat!"
 
-    mock_page.screenshot.return_value = image_data
+    mock_page.screenshot = mock.AsyncMock(return_value=image_data)
     monkeypatch.setattr(
         "vigilant.common.storage.LocalStorage.save_image",
         lambda *_: screenshot_path.write_bytes(image_data),
     )
 
-    browser._take_screenshot(mock_page)
+    await browser._take_screenshot(mock_page)
     image: bytes = screenshot_path.read_bytes()
 
     assert screenshot_path.exists() and image == image_data
