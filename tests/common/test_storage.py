@@ -4,7 +4,12 @@ from unittest import mock
 
 import pytest
 
-from vigilant.common.storage import GoogleCloudStorage, LocalStorage, clear_resources
+from vigilant.common.storage import (
+    settings,
+    GoogleCloudStorage,
+    LocalStorage,
+    clear_resources,
+)
 
 
 def test_local_storage() -> None:
@@ -56,7 +61,7 @@ class TestGoogleCloudStorage:
         bucket_name: str = "app_bucket"
         file_path: str = "path/path/image.png"
 
-        monkeypatch.setenv("BUCKET_NAME", bucket_name)
+        monkeypatch.setattr(settings, "BUCKET_NAME", bucket_name)
 
         object_uri: str = GoogleCloudStorage._build_object_uri(file_path)
 
