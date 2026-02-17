@@ -6,7 +6,7 @@ from unittest import mock
 import pytest
 
 from vigilant.core import update_spreadsheet
-from vigilant.common.values import BalanceSpreadsheet
+from vigilant.common.values import balance_spreadsheet
 
 
 @pytest.fixture
@@ -34,7 +34,7 @@ def test_main(
 
     update_spreadsheet.main()
 
-    MockSpreadSheet.load.assert_called_once_with(BalanceSpreadsheet.KEY)
+    MockSpreadSheet.load.assert_called_once_with(balance_spreadsheet.KEY)
     update_balance_spreadsheet.assert_called_once_with(
         mock_spreadsheet, mock_amount, mock_expenses
     )

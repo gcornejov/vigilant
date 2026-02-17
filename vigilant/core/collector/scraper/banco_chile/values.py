@@ -1,15 +1,23 @@
 from typing import Final
 
-from vigilant.common.values import MetaEnvironment
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Secrets(metaclass=MetaEnvironment):
-    USERNAME: Final[str] = "PORTAL_USERNAME"
-    PASSWORD: Final[str] = "PORTAL_PASSWORD"
+# TODO: Config prefix
+class Secrets(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", env_prefix="CHILE_", extra="ignore"
+    )
 
-    LOGIN_URL: Final[str] = "PORTAL_LOGIN_URL"
-    HOME_URL: Final[str] = "PORTAL_HOME_URL"
-    CREDIT_TRANSACTIONS_URL: Final[str] = "CREDIT_TRANSACTIONS_URL"
+    USERNAME: str
+    PASSWORD: str
+
+    LOGIN_URL: str
+    HOME_URL: str
+    CREDIT_TRANSACTIONS_URL: str
+
+
+secrets = Secrets()
 
 
 class Locators:

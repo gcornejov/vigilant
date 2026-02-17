@@ -5,7 +5,7 @@ from typing import Final
 
 from google.cloud import storage
 
-from vigilant.common.values import Environment, IOResources
+from vigilant.common.values import settings, IOResources
 
 DEFAULT_PATH: Final[str] = "."
 
@@ -36,7 +36,7 @@ class LocalStorage(Storage):
 class GoogleCloudStorage(Storage):
     def __init__(self):
         storage_client = storage.Client()
-        self.bucket: storage.Bucket = storage_client.bucket(Environment.BUCKET_NAME)
+        self.bucket: storage.Bucket = storage_client.bucket(settings.BUCKET_NAME)
 
     def save_image(self, data: bytes, path: str = "") -> str:
         """Save image in GCS bucket
@@ -57,7 +57,7 @@ class GoogleCloudStorage(Storage):
     def _build_object_uri(object_path: str) -> str:
         GCS_BASE_URL: Final[str] = "https://storage.cloud.google.com"
 
-        return f"{GCS_BASE_URL}/{Environment.BUCKET_NAME}/{object_path}"
+        return f"{GCS_BASE_URL}/{settings.BUCKET_NAME}/{object_path}"
 
 
 def clear_resources() -> None:

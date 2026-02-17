@@ -4,6 +4,7 @@ from unittest import mock
 import pytest
 
 from vigilant.common import log
+from vigilant.common.log import settings
 
 
 @mock.patch("vigilant.common.log._get_loglevel")
@@ -39,7 +40,7 @@ def test_build_logger(mock_get_loglevel: mock.MagicMock) -> None:
 def test_log_level(
     monkeypatch: pytest.MonkeyPatch, expected_loglevel: int, loglevel_env: str
 ) -> None:
-    monkeypatch.setenv("LOG_LEVEL", loglevel_env)
+    monkeypatch.setattr(settings, "LOG_LEVEL", loglevel_env)
 
     log_level: int = log._get_loglevel()
 

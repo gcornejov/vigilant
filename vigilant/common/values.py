@@ -1,23 +1,36 @@
-import os
 from pathlib import Path
-from typing import Final
+from typing import Final, Optional
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class MetaEnvironment(type):
-    """
-    A metaclass used to access a environment variable from a class attribute value
-    """
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
 
-    def __getattribute__(cls, name: str) -> str:
-        env_var: str = str(object.__getattribute__(cls, name))
+    LOG_LEVEL: str = "INFO"
+    STORAGE_LOCATION: str = "local"
+    BUCKET_NAME: Optional[str] = None
 
-        return os.getenv(env_var, "")
+
+class BalanceSpreadsheet(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
+
+    KEY: str = "1IKyPmWeaZ_5IRa4I4EOgVwu5oGZ9RSQqQxjRu9P4qY4"
+
+    DATA_WORKSHEET_NAME: str = "Data"
+    PAYMENT_DESC_RANGE: str = "B3:B12"
+
+    EXPENSES_WORKSHEET_NAME: str = "Gastos"
+    AMOUNT_CELL: str = "J2"
+    EXPENSES_CELL: str = "B3"
 
 
-class Environment(metaclass=MetaEnvironment):
-    LOG_LEVEL: Final[str] = "LOG_LEVEL"
-    STORAGE_LOCATION: Final[str] = "STORAGE_LOCATION"
-    BUCKET_NAME: Final[str] = "BUCKET_NAME"
+settings = Settings()
+balance_spreadsheet = BalanceSpreadsheet()
 
 
 class IOResources:
@@ -29,19 +42,6 @@ class IOResources:
 
     OUTPUT_DIR: Final[str] = "output"
     OUTPUT_PATH: Final[Path] = APP_ROOT_PATH / OUTPUT_DIR
-
-
-class BalanceSpreadsheet:
-    KEY: Final[str] = "1IKyPmWeaZ_5IRa4I4EOgVwu5oGZ9RSQqQxjRu9P4qY4"
-
-    DATA_WORKSHEET_NAME: Final[str] = "Data"
-
-    PAYMENT_DESC_RANGE: Final[str] = "B3:B12"
-
-    EXPENSES_WORKSHEET_NAME: Final[str] = "Gastos"
-
-    AMOUNT_CELL: Final[str] = "J2"
-    EXPENSES_CELL: Final[str] = "B3"
 
 
 class StorageLocation:

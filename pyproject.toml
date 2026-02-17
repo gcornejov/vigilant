@@ -15,11 +15,13 @@ dependencies = [
     "uvicorn (>=0.34.2,<0.35.0)",
     "google-cloud-storage (>=3.1.1,<4.0.0)",
     "playwright (>=1.56.0,<2.0.0)",
+    "pydantic-settings (>=2.13.0,<3.0.0)",
+    "pytest-env (>=1.3.2,<2.0.0)",
 ]
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29.5"
-pytest = "^8.3.5"
+pytest = "^9.0.2"
 pytest-cov = "^6.1.1"
 pre-commit = "^4.2.0"
 ruff = "^0.12.0"
@@ -29,6 +31,17 @@ vigilant = "vigilant.run:main"
 
 [tool.pytest.ini_options]
 addopts = "--cov=vigilant --cov-branch --cov-report term-missing"
+
+[tool.pytest_env]
+CHILE_USERNAME = "test_chile_username"
+CHILE_PASSWORD = "test_chile_password"
+CHILE_LOGIN_URL = "https://chile.example.com/login"
+CHILE_HOME_URL = "https://chile.example.com/home"
+CHILE_CREDIT_TRANSACTIONS_URL = "https://chile.example.com/credit-transactions"
+FALABELLA_USERNAME = "test_falabella_username"
+FALABELLA_PASSWORD = "test_falabella_password"
+FALABELLA_LOGIN_URL = "https://falabella.example.com/login"
+FALABELLA_HOME_URL = "https://falabella.example.com/home"
 
 [tool.coverage.report]
 exclude_also = [

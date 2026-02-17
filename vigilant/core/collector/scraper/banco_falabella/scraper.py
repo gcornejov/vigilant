@@ -7,12 +7,12 @@ from playwright.sync_api import Locator, TimeoutError
 from vigilant.common.models import AccountData, Transaction
 from vigilant.common.spreadsheet import SpreadSheet
 from vigilant.common.values import (
-    BalanceSpreadsheet,
+    balance_spreadsheet,
     IOResources as VigilantIOResources,
 )
 from vigilant.core.collector.scraper.banco_falabella.values import (
+    secrets,
     Locators,
-    Secrets,
     IOResources,
 )
 from vigilant.core.collector.scraper import Scraper
@@ -30,7 +30,7 @@ class BancoFalabellaScraper(Scraper):
         """Login to Web portal"""
         self.logger.info("Logging in ...")
 
-        self.page.goto(Secrets.LOGIN_URL)
+        self.page.goto(secrets.LOGIN_URL)
         self.page.wait_for_load_state()
 
         login_btn: Locator = self.page.locator(Locators.LOGIN_FORM_BTN_XPATH)
@@ -39,15 +39,15 @@ class BancoFalabellaScraper(Scraper):
 
         user_input: Locator = self.page.locator(Locators.USER_INPUT_XPATH).first
         user_input.wait_for(state="visible")
-        user_input.fill(Secrets.USERNAME)
+        user_input.fill(secrets.USERNAME)
 
         password_input: Locator = self.page.locator(Locators.PASSWORD_INPUT_XPATH).first
         password_input.wait_for(state="visible")
-        password_input.fill(Secrets.PASSWORD)
+        password_input.fill(secrets.PASSWORD)
 
         self.page.locator(Locators.LOGIN_SUBMIT_BTN_ID).first.click()
 
-        self.page.wait_for_url(Secrets.HOME_URL)
+        self.page.wait_for_url(secrets.HOME_URL)
 
     def _get_credit_transactions(self) -> None:
         """Collect current transactions on credit card"""
@@ -88,12 +88,12 @@ class BancoFalabellaScraper(Scraper):
             usecols=EXPENSES_COLUMNS_INDEX,
         )
 
-        spreadsheet = SpreadSheet.load(BalanceSpreadsheet.KEY)
+        spreadsheet = SpreadSheet.load(balance_spreadsheet.KEY)
         payment_descriptions: list[str] = [
             desc.pop()
             for desc in spreadsheet.read(
-                BalanceSpreadsheet.DATA_WORKSHEET_NAME,
-                BalanceSpreadsheet.PAYMENT_DESC_RANGE,
+                balance_spreadsheet.DATA_WORKSHEET_NAME,
+                balance_spreadsheet.PAYMENT_DESC_RANGE,
             )
         ]
 

@@ -14,7 +14,7 @@ from vigilant import logger
 from vigilant.common.exceptions import DriverException
 from vigilant.common.storage import GoogleCloudStorage, LocalStorage
 from vigilant.common.values import (
-    Environment,
+    settings,
     IOResources,
     StorageLocation,
 )
@@ -23,7 +23,7 @@ WAIT_TIMEOUT: Final[float] = 20000.0
 
 storage = (
     GoogleCloudStorage()
-    if Environment.STORAGE_LOCATION == StorageLocation.GCS
+    if settings.STORAGE_LOCATION == StorageLocation.GCS
     else LocalStorage()
 )
 

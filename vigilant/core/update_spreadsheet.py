@@ -4,12 +4,12 @@ from pathlib import Path
 from vigilant import logger
 from vigilant.common.models import AccountData, AccountReport
 from vigilant.common.spreadsheet import SpreadSheet
-from vigilant.common.values import BalanceSpreadsheet, IOResources
+from vigilant.common.values import balance_spreadsheet, IOResources
 
 
 def main() -> None:
     """Load expenses data into a google spreadsheet"""
-    spreadsheet = SpreadSheet.load(BalanceSpreadsheet.KEY)
+    spreadsheet = SpreadSheet.load(balance_spreadsheet.KEY)
 
     update_balance_spreadsheet(spreadsheet, *load_bank_data())
 
@@ -41,13 +41,13 @@ def update_balance_spreadsheet(
     logger.info("Updating spreadsheet ...")
 
     spreadsheet.write(
-        BalanceSpreadsheet.EXPENSES_WORKSHEET_NAME,
-        BalanceSpreadsheet.AMOUNT_CELL,
+        balance_spreadsheet.EXPENSES_WORKSHEET_NAME,
+        balance_spreadsheet.AMOUNT_CELL,
         [[account_amount]],
     )
     spreadsheet.write(
-        BalanceSpreadsheet.EXPENSES_WORKSHEET_NAME,
-        BalanceSpreadsheet.EXPENSES_CELL,
+        balance_spreadsheet.EXPENSES_WORKSHEET_NAME,
+        balance_spreadsheet.EXPENSES_CELL,
         expenses,
     )
 
