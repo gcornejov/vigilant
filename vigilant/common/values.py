@@ -14,6 +14,14 @@ class Settings(BaseSettings):
     BUCKET_NAME: Optional[str] = None
 
 
+class Collector(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
+
+    ENABLED_SCRAPERS: list[str] = ["BancoChile", "BancoFalabella"]
+
+
 class BalanceSpreadsheet(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
@@ -30,6 +38,7 @@ class BalanceSpreadsheet(BaseSettings):
 
 
 settings = Settings()
+collector = Collector()
 balance_spreadsheet = BalanceSpreadsheet()
 
 
