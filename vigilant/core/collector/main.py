@@ -8,8 +8,22 @@ from vigilant.core.collector.scraper import (
     BancoFalabellaScraper,
     Scraper,
 )
+from vigilant.common.values import collector
 
-scrapers: list[Type[Scraper]] = [BancoChileScraper, BancoFalabellaScraper]
+
+SCRAPER_REGISTRY: dict[str, Type[Scraper]] = {
+    "BancoChile": BancoChileScraper,
+    "BancoFalabella": BancoFalabellaScraper,
+}
+
+
+def get_enabled_scrapers() -> list[Type[Scraper]]:
+    enabled = collector.ENABLED_SCRAPERS
+    return [
+        SCRAPER_REGISTRY[name.strip()]
+        for name in enabled
+        if name.strip() in SCRAPER_REGISTRY
+    ]
 
 
 def collect() -> None:
@@ -18,7 +32,7 @@ def collect() -> None:
         clear_resources()
 
         logger.info("Collecting transactions data ...")
-        for SPR in scrapers:
+        for SPR in get_enabled_scrapers():
             SPR(page).scrap()
 
 

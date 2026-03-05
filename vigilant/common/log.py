@@ -1,7 +1,7 @@
 import logging
 from typing import Final
 
-from vigilant.common.values import Environment
+from vigilant.common.values import settings
 
 APP_NAME: Final[str] = "Vigilant"
 LOG_LEVEL: Final[str] = "LOG_LEVEL"
@@ -37,7 +37,7 @@ def build_logger() -> logging.Logger:
 
 
 def _get_loglevel() -> int:
-    log_level: str | int = Environment.LOG_LEVEL or DEFAULT_LOG_LEVEL
+    log_level: str | int = settings.LOG_LEVEL or DEFAULT_LOG_LEVEL
 
     if isinstance(log_level, str):
         possible_levels: dict[str, int] = logging.getLevelNamesMapping()

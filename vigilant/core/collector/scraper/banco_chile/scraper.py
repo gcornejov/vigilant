@@ -7,12 +7,12 @@ from playwright.sync_api import TimeoutError
 from vigilant.common.models import AccountData, Transaction
 from vigilant.common.spreadsheet import SpreadSheet
 from vigilant.common.values import (
-    BalanceSpreadsheet,
+    balance_spreadsheet,
     IOResources as VigilantIOResources,
 )
 from vigilant.core.collector.scraper.banco_chile.values import (
+    secrets,
     Locators,
-    Secrets,
     IOResources,
 )
 from vigilant.core.collector.scraper import Scraper
@@ -32,13 +32,13 @@ class BancoChileScraper(Scraper):
         """Login to Web portal"""
         self.logger.info("Logging in ...")
 
-        self.page.goto(Secrets.LOGIN_URL)
+        self.page.goto(secrets.LOGIN_URL)
 
-        self.page.locator(Locators.USER_INPUT_ID).fill(Secrets.USERNAME)
-        self.page.locator(Locators.PASSWORD_INPUT_ID).fill(Secrets.PASSWORD)
+        self.page.locator(Locators.USER_INPUT_ID).fill(secrets.USERNAME)
+        self.page.locator(Locators.PASSWORD_INPUT_ID).fill(secrets.PASSWORD)
         self.page.locator(Locators.LOGIN_BTN_ID).click()
 
-        self.page.wait_for_url(Secrets.HOME_URL)
+        self.page.wait_for_url(secrets.HOME_URL)
 
     def _get_current_amount(self) -> None:
         """Collect current account amount and save it in a file"""
@@ -64,7 +64,7 @@ class BancoChileScraper(Scraper):
         """Collect current transactions on credit card"""
         self.logger.info("Getting transactions ...")
 
-        self.page.goto(Secrets.CREDIT_TRANSACTIONS_URL)
+        self.page.goto(secrets.CREDIT_TRANSACTIONS_URL)
         self.page.locator(Locators.DOWNLOAD_GROUP_BTN_XPATH).click()
 
         with self.page.expect_download() as download_info:
@@ -92,12 +92,12 @@ class BancoChileScraper(Scraper):
             usecols=EXPENSES_COLUMNS_INDEX,
         )
 
-        spreadsheet = SpreadSheet.load(BalanceSpreadsheet.KEY)
+        spreadsheet = SpreadSheet.load(balance_spreadsheet.KEY)
         payment_descriptions: list[str] = [
             desc.pop()
             for desc in spreadsheet.read(
-                BalanceSpreadsheet.DATA_WORKSHEET_NAME,
-                BalanceSpreadsheet.PAYMENT_DESC_RANGE,
+                balance_spreadsheet.DATA_WORKSHEET_NAME,
+                balance_spreadsheet.PAYMENT_DESC_RANGE,
             )
         ]
 

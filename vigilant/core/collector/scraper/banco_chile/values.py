@@ -1,15 +1,22 @@
 from typing import Final
 
-from vigilant.common.values import MetaEnvironment
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Secrets(metaclass=MetaEnvironment):
-    USERNAME: Final[str] = "PORTAL_USERNAME"
-    PASSWORD: Final[str] = "PORTAL_PASSWORD"
+class Secrets(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", env_prefix="CHILE_", extra="ignore"
+    )
 
-    LOGIN_URL: Final[str] = "PORTAL_LOGIN_URL"
-    HOME_URL: Final[str] = "PORTAL_HOME_URL"
-    CREDIT_TRANSACTIONS_URL: Final[str] = "CREDIT_TRANSACTIONS_URL"
+    USERNAME: str
+    PASSWORD: str
+
+    LOGIN_URL: str
+    HOME_URL: str
+    CREDIT_TRANSACTIONS_URL: str
+
+
+secrets = Secrets()
 
 
 class Locators:
@@ -26,7 +33,7 @@ class Locators:
         '//*[@id="mat-dialog-0"]/fenix-modal-zona-emergente/div/div/div/button'
     )
     DOWNLOAD_GROUP_BTN_XPATH: Final[str] = (
-        '//*[@id="mat-tab-content-1-0"]/div/fenix-movimientos-no-facturados-tabla/div[1]/div[1]/div[2]/bch-button'
+        '//*[@id="mat-tab-content-0-0"]/div/div/fenix-movimientos-no-facturados-tabla/div[1]/div[1]/div[2]/bch-button'
     )
     DOWNLOAD_BTN_XPATH: Final[str] = '//*[@id="cdk-overlay-0"]/div/div/button[1]'
 

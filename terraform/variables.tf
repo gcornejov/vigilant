@@ -20,15 +20,15 @@ variable "apis" {
 
 variable "secrets" {
   type = object({
-    PORTAL_USERNAME         = string,
-    PORTAL_PASSWORD         = string,
-    PORTAL_LOGIN_URL        = string,
-    PORTAL_HOME_URL         = string,
-    CREDIT_TRANSACTIONS_URL = string,
-    CMR_PORTAL_USERNAME     = string,
-    CMR_PORTAL_PASSWORD     = string,
-    CMR_PORTAL_LOGIN_URL    = string,
-    CMR_PORTAL_HOME_URL     = string,
+    CHILE_USERNAME                = string,
+    CHILE_PASSWORD                = string,
+    CHILE_LOGIN_URL               = string,
+    CHILE_HOME_URL                = string,
+    CHILE_CREDIT_TRANSACTIONS_URL = string,
+    FALABELLA_USERNAME            = string,
+    FALABELLA_PASSWORD            = string,
+    FALABELLA_LOGIN_URL           = string,
+    FALABELLA_HOME_URL            = string,
   })
 }
 

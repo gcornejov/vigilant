@@ -1,14 +1,24 @@
 from typing import Final
 
-from vigilant.common.values import MetaEnvironment
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Secrets(metaclass=MetaEnvironment):
-    USERNAME: Final[str] = "CMR_PORTAL_USERNAME"
-    PASSWORD: Final[str] = "CMR_PORTAL_PASSWORD"
+class Secrets(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_prefix="FALABELLA_",
+        extra="ignore",
+    )
 
-    LOGIN_URL: Final[str] = "CMR_PORTAL_LOGIN_URL"
-    HOME_URL: Final[str] = "CMR_PORTAL_HOME_URL"
+    USERNAME: str
+    PASSWORD: str
+
+    LOGIN_URL: str
+    HOME_URL: str
+
+
+secrets = Secrets()
 
 
 class Locators:

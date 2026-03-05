@@ -26,8 +26,11 @@ def test_collect(
     mock_scraper: Type[Scraper],
 ) -> None:
     monkeypatch.setattr("vigilant.common.values.IOResources.DATA_PATH", tmp_path)
+    monkeypatch.setattr(
+        "vigilant.common.values.collector.ENABLED_SCRAPERS", ["MockScraper"]
+    )
 
-    collector.scrapers = [mock_scraper]
+    collector.SCRAPER_REGISTRY = {"MockScraper": mock_scraper}
     collector.collect()
 
     driver_session.assert_called_once()
