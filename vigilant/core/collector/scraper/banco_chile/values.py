@@ -27,6 +27,7 @@ class Locators:
     PROMOTION_BANNER_CLASS: Final[str] = ".fondo"
     AMOUNT_TEXT_CLASS: Final[str] = ".monto-cuenta"
     DOWNLOAD_TOAST_CLASS: Final[str] = ".snackbar-text"
+    NO_TRANSACTIONS_CLASS: Final[str] = ".alert-error"
     LOGOUT_BTN_CLASS: Final[str] = ".button-logout"
 
     BANNER_CLOSE_BTN_XPATH: Final[str] = (

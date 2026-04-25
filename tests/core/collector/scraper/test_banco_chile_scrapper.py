@@ -5,6 +5,7 @@ from unittest import mock
 
 import pytest
 import pandas as pd
+from playwright.sync_api import TimeoutError
 
 from vigilant.core.collector.scraper import BancoChileScraper
 from vigilant.core.collector.scraper.banco_chile.values import IOResources
@@ -13,6 +14,13 @@ from vigilant.core.collector.scraper.banco_chile.values import IOResources
 @pytest.fixture
 def mock_bank_chile_data() -> dict:
     return json.loads(Path("tests/resources/bank_chile.json").read_text())
+
+
+@pytest.fixture
+def mock_bank_chile_no_transactions_data() -> dict:
+    return json.loads(
+        Path("tests/resources/bank_chile_no_transactions.json").read_text()
+    )
 
 
 @mock.patch("vigilant.core.collector.scraper.BancoChileScraper._login")
@@ -79,16 +87,39 @@ def test_get_credit_transactions(tmp_path: Path, mock_page: mock.MagicMock) -> N
     )
 
 
+def test_get_credit_transactions_empty(mock_page: mock.MagicMock) -> None:
+    mock_click = mock.MagicMock()
+    mock_click.side_effect = TimeoutError("")
+    mock_locator = mock.MagicMock()
+
+    mock_locator.click = mock_click
+    mock_page.locator.return_value = mock_locator
+
+    scraper = BancoChileScraper(mock_page)
+
+    scraper._get_credit_transactions()
+
+    mock_page.goto.assert_called_once()
+    mock_page.locator().click.assert_called_once()
+    mock_page.locator().wait_for.assert_called_once()
+
+
 @mock.patch("vigilant.core.collector.scraper.banco_chile.scraper.SpreadSheet")
 @mock.patch("vigilant.core.collector.scraper.banco_chile.scraper.pd.read_excel")
 def test_save(
     mock_pd_read_excel: mock.MagicMock,
     MockSpreadSheet: mock.MagicMock,
     tmp_path: Path,
+    tmp_path_factory: pytest.TempPathFactory,
     monkeypatch: pytest.MonkeyPatch,
     mock_page: mock.MagicMock,
     mock_bank_chile_data: dict,
 ) -> None:
+    mock_data_path: Path = tmp_path_factory.mktemp("data")
+    (mock_data_path / IOResources.TRANSACTIONS_FILENAME).write_text(
+        "Hesitation is defeat!"
+    )
+
     mock_cols_keys: tuple[str] = ("date", "description", "location", "amount")
     mock_cols_index: tuple[str] = (1, 4, 6, 10)
 
@@ -121,7 +152,7 @@ def test_save(
     )
 
     scraper = BancoChileScraper(mock_page)
-    scraper.data_path = Path("/")
+    scraper.data_path = mock_data_path
     scraper.amount = 123456
 
     scraper._save()
@@ -129,10 +160,36 @@ def test_save(
     bank_output: dict = json.loads(Path(tmp_path / "bank_data.json").read_text())
 
     mock_pd_read_excel.assert_called_once_with(
-        Path("/", IOResources.TRANSACTIONS_FILENAME),
+        mock_data_path / IOResources.TRANSACTIONS_FILENAME,
         sheet_name=0,
         header=17,
         names=mock_cols_keys,
         usecols=mock_cols_index,
     )
     assert bank_output == mock_bank_chile_data
+
+
+def test_save_no_transactions(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mock_page: mock.MagicMock,
+    mock_bank_chile_no_transactions_data: dict,
+) -> None:
+    monkeypatch.setattr(
+        "vigilant.common.values.IOResources.OUTPUT_PATH",
+        tmp_path,
+    )
+    monkeypatch.setattr(
+        "vigilant.core.collector.scraper.banco_chile.values.IOResources.OUTPUT_FILENAME",
+        "bank_data.json",
+    )
+
+    scraper = BancoChileScraper(mock_page)
+    scraper.data_path = Path("/")
+    scraper.amount = 123456
+
+    scraper._save()
+
+    bank_output: dict = json.loads(Path(tmp_path / "bank_data.json").read_text())
+
+    assert bank_output == mock_bank_chile_no_transactions_data
