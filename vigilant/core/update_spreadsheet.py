@@ -1,10 +1,13 @@
 import json
 from pathlib import Path
+from typing import Final
 
 from vigilant import logger
 from vigilant.common.models import AccountData, AccountReport
 from vigilant.common.spreadsheet import SpreadSheet
 from vigilant.common.values import balance_spreadsheet, IOResources
+
+TRANSACTIONS_COUNT: Final[int] = 198
 
 
 def main() -> None:
@@ -39,6 +42,8 @@ def update_balance_spreadsheet(
         expenses (list[list[str]]): Expenses list
     """
     logger.info("Updating spreadsheet ...")
+
+    expenses.extend([["-", "", "", "", ""]] * (TRANSACTIONS_COUNT - len(expenses)))
 
     spreadsheet.write(
         balance_spreadsheet.EXPENSES_WORKSHEET_NAME,
