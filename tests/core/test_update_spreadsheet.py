@@ -59,6 +59,13 @@ def test_update_balance_spreadsheet(MockSpreadSheet: mock.MagicMock) -> None:
     mock_spreadsheet = mock.MagicMock()
     MockSpreadSheet.load.return_value = mock_spreadsheet
 
-    update_spreadsheet.update_balance_spreadsheet(mock_spreadsheet, 0, [[]])
+    initial_expenses = [["store", 100], ["restaurant", 50]]
+    update_spreadsheet.update_balance_spreadsheet(
+        mock_spreadsheet, 1000, initial_expenses
+    )
 
-    mock_spreadsheet.write.assert_called()
+    calls = mock_spreadsheet.write.call_args_list
+    expenses_call = calls[1]
+    written_expenses = expenses_call[0][2]
+
+    assert len(written_expenses) == update_spreadsheet.TRANSACTIONS_COUNT

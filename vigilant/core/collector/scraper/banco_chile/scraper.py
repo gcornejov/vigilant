@@ -65,7 +65,12 @@ class BancoChileScraper(Scraper):
         self.logger.info("Getting transactions ...")
 
         self.page.goto(secrets.CREDIT_TRANSACTIONS_URL)
-        self.page.locator(Locators.DOWNLOAD_GROUP_BTN_XPATH).click()
+
+        try:
+            self.page.locator(Locators.DOWNLOAD_GROUP_BTN_XPATH).click()
+        except TimeoutError:
+            self.page.locator(Locators.NO_TRANSACTIONS_CLASS).wait_for(state="visible")
+            return
 
         with self.page.expect_download() as download_info:
             self.page.locator(Locators.DOWNLOAD_BTN_XPATH).click()
@@ -76,44 +81,49 @@ class BancoChileScraper(Scraper):
         """Structure and saves collected data in a json file"""
         self.logger.info("Saving data ...")
 
-        EXPENSES_COLUMNS_INDEX: tuple[str] = (1, 4, 6, 10)
-        EXPENSES_COLUMNS_KEYS: tuple[str] = (
-            "date",
-            "description",
-            "location",
-            "amount",
-        )
-
-        expenses: pd.DataFrame = pd.read_excel(
-            self.data_path / IOResources.TRANSACTIONS_FILENAME,
-            sheet_name=0,
-            header=17,
-            names=EXPENSES_COLUMNS_KEYS,
-            usecols=EXPENSES_COLUMNS_INDEX,
-        )
-
-        spreadsheet = SpreadSheet.load(balance_spreadsheet.KEY)
-        payment_descriptions: list[str] = [
-            desc.pop()
-            for desc in spreadsheet.read(
-                balance_spreadsheet.DATA_WORKSHEET_NAME,
-                balance_spreadsheet.PAYMENT_DESC_RANGE,
+        transactions_file = self.data_path / IOResources.TRANSACTIONS_FILENAME
+        collected_transactions: list[Transaction] = []
+        if transactions_file.exists():
+            EXPENSES_COLUMNS_INDEX: tuple[str] = (1, 4, 6, 10)
+            EXPENSES_COLUMNS_KEYS: tuple[str] = (
+                "date",
+                "description",
+                "location",
+                "amount",
             )
-        ]
 
-        expenses = expenses[(~expenses.description.isin(payment_descriptions))].fillna(
-            ""
-        )
+            expenses: pd.DataFrame = pd.read_excel(
+                transactions_file,
+                sheet_name=0,
+                header=17,
+                names=EXPENSES_COLUMNS_KEYS,
+                usecols=EXPENSES_COLUMNS_INDEX,
+            )
 
-        account_data = AccountData(
-            identifier=self.identifier,
-            amount=self.amount,
-            transactions=[
+            spreadsheet = SpreadSheet.load(balance_spreadsheet.KEY)
+            payment_descriptions: list[str] = [
+                desc.pop()
+                for desc in spreadsheet.read(
+                    balance_spreadsheet.DATA_WORKSHEET_NAME,
+                    balance_spreadsheet.PAYMENT_DESC_RANGE,
+                )
+            ]
+
+            expenses = expenses[
+                (~expenses.description.isin(payment_descriptions))
+            ].fillna("")
+
+            collected_transactions = [
                 Transaction(
                     **dict(zip(list(Transaction.model_fields), raw_transaction))
                 )
                 for raw_transaction in expenses.values.tolist()
-            ],
+            ]
+
+        account_data = AccountData(
+            identifier=self.identifier,
+            amount=self.amount,
+            transactions=collected_transactions,
         )
 
         (VigilantIOResources.OUTPUT_PATH / IOResources.OUTPUT_FILENAME).write_text(
