@@ -19,7 +19,7 @@ from vigilant.common.values import (
     StorageLocation,
 )
 
-WAIT_TIMEOUT: Final[float] = 20000.0
+WAIT_TIMEOUT: Final[float] = 50000.0
 
 storage = (
     GoogleCloudStorage()
