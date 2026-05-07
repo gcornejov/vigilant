@@ -4,7 +4,7 @@
 
     // Features to add to the dev container. More info: https://containers.dev/features.
     "features": {
-        "ghcr.io/devcontainers/features/common-utils:2": {"configureZshAsDefaultShell": true},
+        "ghcr.io/robbit-o/devex/zsh-p10k:0": {},
         "ghcr.io/devcontainers/features/python:1": {"version": "3.12"},
         "ghcr.io/devcontainers-extra/features/poetry:2": {},
         "ghcr.io/devcontainers/features/terraform:1": {},
@@ -12,8 +12,7 @@
         "ghcr.io/devcontainers/features/git:1": {},
         "ghcr.io/devcontainers/features/github-cli:1": {},
         "ghcr.io/dhoeric/features/google-cloud-cli:1": {},
-        "ghcr.io/joshuanianji/devcontainer-features/gcloud-cli-persistence:1": {},
-        "ghcr.io/gcornejov/devex/zsh-p10k:0": {}
+        "ghcr.io/joshuanianji/devcontainer-features/gcloud-cli-persistence:1": {}
     },
 
     "remoteEnv": {
@@ -56,11 +55,14 @@
                 "4ops.terraform"
             ],
             "settings": {
-                "python.defaultInterpreterPath": ".venv/bin/activate",
-                "python.testing.pytestEnabled": true,
-                "python.testing.pytestArgs": [
-                    "-s"
-                ]
+                "[python]": {
+                    "defaultInterpreterPath": ".venv/bin/python",
+                    "testing.pytestEnabled": true,
+                    "testing.pytestArgs": [
+                        "-s"
+                    ],
+                    "editor.defaultFormatter": "charliermarsh.ruff"
+                }
             }
         }
     },
