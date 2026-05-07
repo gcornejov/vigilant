@@ -50,3 +50,29 @@ def test_write() -> None:
 
     _mock_spreadsheet.worksheet.assert_called_once_with(mock_title)
     mock_worksheet.update.assert_called_once_with(mock_data, mock_range)
+
+
+def test_format_currency() -> None:
+    mock_title = "Expenses"
+    mock_range = "A1:A10"
+
+    mock_worksheet = mock.MagicMock()
+    _mock_spreadsheet = mock.MagicMock()
+    _mock_spreadsheet.worksheet.return_value = mock_worksheet
+
+    spreadsheet.SpreadSheet(_mock_spreadsheet).format_currency(mock_title, mock_range)
+
+    _mock_spreadsheet.worksheet.assert_called_once_with(mock_title)
+    mock_worksheet.batch_format.assert_called_once_with(
+        [
+            {
+                "range": mock_range,
+                "format": {
+                    "numberFormat": {
+                        "type": "NUMBER",
+                        "pattern": '_ "$"* #,##0_ ;_ "$"* \-#,##0_ ;_ "$"* "-"_ ;_ @_ ',
+                    },
+                },
+            }
+        ]
+    )

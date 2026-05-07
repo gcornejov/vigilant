@@ -36,6 +36,8 @@ class BalanceSpreadsheet(BaseSettings):
     AMOUNT_CELL: str = "J2"
     EXPENSES_CELL: str = "B3"
 
+    TRANSACTIONS_AMOUNT_RANGE: str = "F3:F200"
+
 
 settings = Settings()
 collector = Collector()
