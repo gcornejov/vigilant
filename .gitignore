@@ -178,3 +178,6 @@ screenshots
 
 # Terraform
 .terraform*
+
+# GCloud Credentials
+credentials.json

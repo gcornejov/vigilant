@@ -69,3 +69,8 @@ def test_update_balance_spreadsheet(MockSpreadSheet: mock.MagicMock) -> None:
     written_expenses = expenses_call[0][2]
 
     assert len(written_expenses) == update_spreadsheet.TRANSACTIONS_COUNT
+
+    mock_spreadsheet.format_currency.assert_called_once_with(
+        balance_spreadsheet.EXPENSES_WORKSHEET_NAME,
+        balance_spreadsheet.TRANSACTIONS_AMOUNT_RANGE,
+    )

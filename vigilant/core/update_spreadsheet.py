@@ -56,6 +56,11 @@ def update_balance_spreadsheet(
         expenses,
     )
 
+    spreadsheet.format_currency(
+        balance_spreadsheet.EXPENSES_WORKSHEET_NAME,
+        balance_spreadsheet.TRANSACTIONS_AMOUNT_RANGE,
+    )
+
 
 if __name__ == "__main__":
     main()
