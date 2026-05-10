@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     )
 
     LOG_LEVEL: str = "INFO"
+    BROWSER_WAIT_TIMEOUT: float = 30000.0
     STORAGE_LOCATION: str = "local"
     BUCKET_NAME: Optional[str] = None
 

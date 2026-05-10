@@ -1,7 +1,6 @@
 from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import datetime
-from typing import Final
 
 from playwright.sync_api import (
     Browser,
@@ -18,8 +17,6 @@ from vigilant.common.values import (
     IOResources,
     StorageLocation,
 )
-
-WAIT_TIMEOUT: Final[float] = 20000.0
 
 storage = (
     GoogleCloudStorage()
@@ -42,7 +39,7 @@ def session() -> Generator[Page]:
             "Chrome/123.0.0.0 Safari/537.36",
         )
         page: Page = context.new_page()
-        page.set_default_timeout(WAIT_TIMEOUT)
+        page.set_default_timeout(settings.BROWSER_WAIT_TIMEOUT)
 
         try:
             yield page
