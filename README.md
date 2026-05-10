@@ -20,17 +20,10 @@
 
 ```shell
 gcloud auth application-default login \
-    --billing-project ${GCP_PROJECT_ID} \
+    --client-id-file credentials.json \
+    --billing-project ${GCLOUD_PROJECT} \
     --scopes https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/spreadsheets,https://www.googleapis.com/auth/drive
 ```
-
-## Required environment variables
-
-- PORTAL_USERNAME
-- PORTAL_PASSWORD
-- PORTAL_LOGIN_URL
-- PORTAL_HOME_URL
-- CREDIT_TRANSACTIONS_URL
 
 ## Run application
 
