@@ -35,7 +35,7 @@ class BancoFalabellaScraper(Scraper):
 
         login_btn: Locator = self.page.locator(Locators.LOGIN_FORM_BTN_XPATH)
         login_btn.wait_for(state="visible")
-        login_btn.click()
+        login_btn.click(delay=1000.0)
 
         user_input: Locator = self.page.locator(Locators.USER_INPUT_XPATH).first
         user_input.wait_for(state="visible")
