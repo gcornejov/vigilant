@@ -5,6 +5,7 @@ import pytest
 
 from vigilant.common import browser
 from vigilant.common.exceptions import DriverException
+from vigilant.common.values import settings
 
 
 @mock.patch("vigilant.common.browser.sync_playwright")
@@ -31,7 +32,7 @@ def test_session(
         "Chrome/123.0.0.0 Safari/537.36",
     )
     mock_browser.close.assert_called_once_with()
-    mock_page.set_default_timeout.assert_called_once_with(browser.WAIT_TIMEOUT)
+    mock_page.set_default_timeout.assert_called_once_with(settings.BROWSER_WAIT_TIMEOUT)
 
 
 @mock.patch("vigilant.common.browser.sync_playwright")
