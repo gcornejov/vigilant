@@ -9,6 +9,7 @@ from vigilant.common.spreadsheet import SpreadSheet
 from vigilant.common.values import (
     balance_spreadsheet,
     IOResources as VigilantIOResources,
+    settings,
 )
 from vigilant.core.collector.scraper.banco_falabella.values import (
     secrets,
@@ -31,23 +32,26 @@ class BancoFalabellaScraper(Scraper):
         self.logger.info("Logging in ...")
 
         self.page.goto(secrets.LOGIN_URL)
-        self.page.wait_for_load_state()
+        self.page.wait_for_load_state("networkidle")
 
         login_btn: Locator = self.page.locator(Locators.LOGIN_FORM_BTN_XPATH)
-        login_btn.wait_for(state="visible")
-        login_btn.click(delay=1000.0)
+        login_btn.wait_for(state="visible", timeout=settings.BROWSER_WAIT_TIMEOUT)
+        login_btn.click(delay=500.0)
 
         user_input: Locator = self.page.locator(Locators.USER_INPUT_XPATH).first
-        user_input.wait_for(state="visible")
+        user_input.wait_for(state="visible", timeout=settings.BROWSER_WAIT_TIMEOUT)
         user_input.fill(secrets.USERNAME)
 
         password_input: Locator = self.page.locator(Locators.PASSWORD_INPUT_XPATH).first
-        password_input.wait_for(state="visible")
+        password_input.wait_for(state="visible", timeout=settings.BROWSER_WAIT_TIMEOUT)
         password_input.fill(secrets.PASSWORD)
 
-        self.page.locator(Locators.LOGIN_SUBMIT_BTN_ID).first.click()
+        submit_btn = self.page.locator(Locators.LOGIN_SUBMIT_BTN_ID).first
+        submit_btn.wait_for(state="visible", timeout=settings.BROWSER_WAIT_TIMEOUT)
+        submit_btn.click(delay=500.0)
 
-        self.page.wait_for_url(secrets.HOME_URL)
+        self.page.wait_for_url(secrets.HOME_URL, timeout=settings.BROWSER_WAIT_TIMEOUT)
+        self.page.wait_for_load_state("networkidle")
 
     def _get_credit_transactions(self) -> None:
         """Collect current transactions on credit card"""

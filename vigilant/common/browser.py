@@ -30,6 +30,12 @@ def session() -> Generator[Page]:
     with sync_playwright() as p:
         browser: Browser = p.chromium.launch(
             channel="chrome",
+            args=[
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
+            ],
         )
         context: BrowserContext = browser.new_context(
             accept_downloads=True,
