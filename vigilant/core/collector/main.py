@@ -28,11 +28,11 @@ def get_enabled_scrapers() -> list[Type[Scraper]]:
 
 def collect() -> None:
     """Collect accounts data"""
-    with session() as page:
-        clear_resources()
+    clear_resources()
 
-        logger.info("Collecting transactions data ...")
-        for SPR in get_enabled_scrapers():
+    logger.info("Collecting transactions data ...")
+    for SPR in get_enabled_scrapers():
+        with session() as page:
             SPR(page).scrap()
 
 

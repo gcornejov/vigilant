@@ -23,7 +23,15 @@ def test_session(
     with browser.session() as session:
         assert session == mock_page
 
-    mock_playwright_session.chromium.launch.assert_called_once_with(channel="chrome")
+    mock_playwright_session.chromium.launch.assert_called_once_with(
+        channel="chrome",
+        args=[
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+        ],
+    )
     mock_browser.new_context.assert_called_once_with(
         accept_downloads=True,
         viewport={"width": 1920, "height": 1080},
