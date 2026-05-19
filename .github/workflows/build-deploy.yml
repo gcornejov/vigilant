@@ -73,27 +73,51 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
-    env:
-      TF_VAR_secrets: "${{ secrets.SECRETS_JSON }}"
     steps:
       - uses: actions/checkout@v6
-      -
-        name: Setup Terraform
+
+      - name: Setup Terraform
         uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: ${{ vars.TF_VERSION }}
           terraform_wrapper: false
-      -
-        name: GCP Auth
+
+      - name: GCP Auth
         uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.TF_SA }}
-      -
-        name: Terraform Init
+
+      - name: Load secrets into Env JSON
+        run: |
+          COMPACT_JSON=$(jq -c -n \
+            --arg chile_username "${{ secrets.CHILE_USERNAME }}" \
+            --arg chile_password "${{ secrets.CHILE_PASSWORD }}" \
+            --arg chile_login_url "${{ secrets.CHILE_LOGIN_URL }}" \
+            --arg chile_home_url "${{ secrets.CHILE_HOME_URL }}" \
+            --arg chile_credit_transactions_url "${{ secrets.CHILE_CREDIT_TRANSACTIONS_URL }}" \
+            --arg falabella_username "${{ secrets.FALABELLA_USERNAME }}" \
+            --arg falabella_password "${{ secrets.FALABELLA_PASSWORD }}" \
+            --arg falabella_login_url "${{ secrets.FALABELLA_LOGIN_URL }}" \
+            --arg falabella_home_url "${{ secrets.FALABELLA_HOME_URL }}" \
+            '{
+                CHILE_USERNAME: $chile_username,
+                CHILE_PASSWORD: $chile_password,
+                CHILE_LOGIN_URL: $chile_login_url,
+                CHILE_HOME_URL: $chile_home_url,
+                CHILE_CREDIT_TRANSACTIONS_URL: $chile_credit_transactions_url,
+                FALABELLA_USERNAME: $falabella_username,
+                FALABELLA_PASSWORD: $falabella_password,
+                FALABELLA_LOGIN_URL: $falabella_login_url,
+                FALABELLA_HOME_URL: $falabella_home_url
+            }')
+
+          echo "TF_VAR_secrets=${COMPACT_JSON}" >> $GITHUB_ENV
+
+      - name: Terraform Init
         working-directory: terraform
         run: terraform init
-      -
-        name: Terraform Apply
+
+      - name: Terraform Apply
         working-directory: terraform
         run: terraform apply --auto-approve -var service_image=${{ needs.docker.outputs.image }}
