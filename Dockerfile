@@ -1,4 +1,4 @@
-FROM thehale/python-poetry:2.1.3-py3.12-slim AS build-deps
+FROM thehale/python-poetry:2.4.1-py3.12-slim AS build-deps
 
 RUN poetry self add poetry-plugin-export
 
@@ -14,12 +14,13 @@ RUN apt update -y && apt upgrade -y
 # Create app folder
 RUN mkdir -p -m 777 /var/lib/vigilant
 
+# Install Chrome Browser and Driver
+RUN pip install --no-cache-dir --upgrade playwright && \
+    playwright install chrome --with-deps
+
 # Install dependencies
 COPY --from=build-deps /requirements.txt .
 RUN pip install --no-cache-dir --upgrade -r requirements.txt
-
-# Install Chrome Browser and Driver
-RUN playwright install chrome --with-deps
 
 # Copy app source code
 ADD vigilant /vigilant
