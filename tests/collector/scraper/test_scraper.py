@@ -1,3 +1,4 @@
+import re
 from unittest import mock
 
 from playwright.sync_api import Page
@@ -15,7 +16,12 @@ class DummyScraper(Scraper):
         RUN_STATUS_CELL="D1",
     )
 
-    def navigate(self) -> None: ...
+    def __init__(self, page: Page) -> None:
+        super().__init__(page)
+        self.navigation_called = False
+
+    def navigate(self) -> None:
+        self.navigation_called = True
 
     @property
     def account_data(self) -> AccountData:
@@ -59,3 +65,31 @@ def test_upload_writes_account_data_to_spreadsheet(
     assert transactions[0] == ["01/01/2020", "Clothes", "", 25000]
     assert transactions[1] == ["02/01/2020", "Food", "", 40000]
     assert transactions[2:] == [["", "", "", ""]] * 98
+
+
+@mock.patch("vigilant.collector.scraper.scraper.SpreadSheet")
+def test_scrap_creates_data_path_and_writes_update_date(
+    MockSpreadSheet: mock.MagicMock, tmp_path
+) -> None:
+    spreadsheet = mock.MagicMock()
+    MockSpreadSheet.load.return_value = spreadsheet
+
+    mock_page = mock.MagicMock(spec=Page)
+    with mock.patch(
+        "vigilant.collector.scraper.scraper.IOResources.DATA_PATH",
+        tmp_path,
+    ):
+        scraper = DummyScraper(mock_page)
+        scraper.scrap()
+
+    assert scraper.navigation_called is True
+    assert scraper.data_path.exists() is True
+    assert scraper.data_path.is_dir() is True
+
+    assert MockSpreadSheet.load.call_count == 2
+    assert spreadsheet.write.call_count == 3
+
+    worksheet_title, cell, payload = spreadsheet.write.call_args_list[-1][0]
+    assert worksheet_title == "Sheet1"
+    assert cell == "C1"
+    assert re.match(r"\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}", payload[0][0])

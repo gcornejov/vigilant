@@ -3,7 +3,9 @@ import random
 import string
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from playwright.sync_api import Page
 
@@ -43,6 +45,19 @@ class Scraper(ABC):
 
         self.navigate()
         self.upload()
+
+        spreadsheet = SpreadSheet.load(balance_spreadsheet.KEY)
+        spreadsheet.write(
+            self.spreadsheet_config.WORKSHEET_NAME,
+            self.spreadsheet_config.UPDATE_DATE_CELL,
+            [
+                [
+                    datetime.now(ZoneInfo("America/Santiago")).strftime(
+                        "%Y/%m/%d %H:%M:%S"
+                    )
+                ]
+            ],
+        )
 
     @abstractmethod
     def navigate(self) -> None: ...
