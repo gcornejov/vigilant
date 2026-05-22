@@ -33,12 +33,6 @@ class BalanceSpreadsheet(BaseSettings):
     DATA_WORKSHEET_NAME: str = "Data"
     PAYMENT_DESC_RANGE: str = "B3:B12"
 
-    EXPENSES_WORKSHEET_NAME: str = "Gastos"
-    AMOUNT_CELL: str = "J2"
-    EXPENSES_CELL: str = "B3"
-
-    TRANSACTIONS_AMOUNT_RANGE: str = "F3:F200"
-
 
 settings = Settings()
 collector = Collector()

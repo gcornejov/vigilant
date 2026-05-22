@@ -16,7 +16,21 @@ class Secrets(BaseSettings):
     CREDIT_TRANSACTIONS_URL: str
 
 
+class SpreadsheetResources(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", env_prefix="CHILE_", extra="ignore"
+    )
+
+    WORKSHEET_NAME: Final[str] = "Data"
+    AMOUNT_CELL: Final[str] = "E2"
+    TRANSACTIONS_CELL: Final[str] = "E5"
+
+    UPDATE_DATE_CELL: Final[str] = "G3"
+    RUN_STATUS_CELL: Final[str] = "H3"
+
+
 secrets = Secrets()
+spreadsheet_resources = SpreadsheetResources()
 
 
 class Locators:

@@ -1,4 +1,5 @@
 from contextlib import suppress
+from functools import lru_cache
 from typing import Final
 
 import pandas as pd
@@ -6,52 +7,53 @@ from playwright.sync_api import Locator, TimeoutError
 
 from vigilant.common.models import AccountData, Transaction
 from vigilant.common.spreadsheet import SpreadSheet
-from vigilant.common.values import (
-    balance_spreadsheet,
-    IOResources as VigilantIOResources,
-    settings,
-)
-from vigilant.core.collector.scraper.banco_falabella.values import (
+from vigilant.common.values import balance_spreadsheet
+from vigilant.collector.scraper.banco_falabella.values import (
     secrets,
+    spreadsheet_resources,
     Locators,
     IOResources,
 )
-from vigilant.core.collector.scraper import Scraper
+from vigilant.collector.scraper import Scraper, SpreadsheetConfig
 
 
 class BancoFalabellaScraper(Scraper):
     identifier: Final[str] = "Falabella"
+    spreadsheet_config = SpreadsheetConfig(
+        spreadsheet_resources.WORKSHEET_NAME,
+        spreadsheet_resources.AMOUNT_CELL,
+        spreadsheet_resources.TRANSACTIONS_CELL,
+        spreadsheet_resources.UPDATE_DATE_CELL,
+        spreadsheet_resources.RUN_STATUS_CELL,
+    )
 
     def navigate(self) -> None:
         self._login()
         self._get_credit_transactions()
-        self._save()
 
     def _login(self) -> None:
         """Login to Web portal"""
         self.logger.info("Logging in ...")
 
-        self.page.goto(secrets.LOGIN_URL)
-        self.page.wait_for_load_state("networkidle")
+        self.page.goto(secrets.LOGIN_URL, wait_until="domcontentloaded")
 
         login_btn: Locator = self.page.locator(Locators.LOGIN_FORM_BTN_XPATH)
-        login_btn.wait_for(state="visible", timeout=settings.BROWSER_WAIT_TIMEOUT)
+        login_btn.wait_for(state="visible")
         login_btn.click(delay=500.0)
 
         user_input: Locator = self.page.locator(Locators.USER_INPUT_XPATH).first
-        user_input.wait_for(state="visible", timeout=settings.BROWSER_WAIT_TIMEOUT)
+        user_input.wait_for(state="visible")
         user_input.fill(secrets.USERNAME)
 
         password_input: Locator = self.page.locator(Locators.PASSWORD_INPUT_XPATH).first
-        password_input.wait_for(state="visible", timeout=settings.BROWSER_WAIT_TIMEOUT)
+        password_input.wait_for(state="visible")
         password_input.fill(secrets.PASSWORD)
 
         submit_btn = self.page.locator(Locators.LOGIN_SUBMIT_BTN_ID).first
-        submit_btn.wait_for(state="visible", timeout=settings.BROWSER_WAIT_TIMEOUT)
+        submit_btn.wait_for(state="visible")
         submit_btn.click(delay=500.0)
 
-        self.page.wait_for_url(secrets.HOME_URL, timeout=settings.BROWSER_WAIT_TIMEOUT)
-        self.page.wait_for_load_state("networkidle")
+        self.page.wait_for_url(secrets.HOME_URL, wait_until="domcontentloaded")
 
     def _get_credit_transactions(self) -> None:
         """Collect current transactions on credit card"""
@@ -72,24 +74,41 @@ class BancoFalabellaScraper(Scraper):
 
         download_info.value.save_as(self.data_path / IOResources.TRANSACTIONS_FILENAME)
 
-    def _save(self) -> None:
-        """Structure and saves collected data in a json file"""
-        self.logger.info("Saving data ...")
+    @property
+    @lru_cache(maxsize=128)
+    def account_data(self) -> AccountData:
+        """Returns collected data structured in an AccountData object"""
+        return AccountData(
+            identifier=self.identifier,
+            amount=0,
+            transactions=[
+                Transaction(
+                    **dict(zip(list(Transaction.model_fields), raw_transaction))
+                )
+                for raw_transaction in self._load_transactions()
+            ],
+        )
 
-        EXPENSES_COLUMNS_INDEX: tuple[str] = (0, 1, 4, 5)
-        EXPENSES_COLUMNS_KEYS: tuple[str] = (
+    def _load_transactions(self) -> list[list]:
+        """Loads transactions data from a file
+
+        Returns:
+            list[list]: list of transactions
+        """
+        TRANSACTIONS_COLUMNS_INDEX: tuple[str] = (0, 1, 4, 5)
+        TRANSACTIONS_COLUMNS_KEYS: tuple[str] = (
             "date",
             "description",
             "fees",
             "amount",
         )
 
-        expenses: pd.DataFrame = pd.read_excel(
+        transactions: pd.DataFrame = pd.read_excel(
             self.data_path / IOResources.TRANSACTIONS_FILENAME,
             sheet_name=0,
             header=0,
-            names=EXPENSES_COLUMNS_KEYS,
-            usecols=EXPENSES_COLUMNS_INDEX,
+            names=TRANSACTIONS_COLUMNS_KEYS,
+            usecols=TRANSACTIONS_COLUMNS_INDEX,
         )
 
         spreadsheet = SpreadSheet.load(balance_spreadsheet.KEY)
@@ -101,23 +120,11 @@ class BancoFalabellaScraper(Scraper):
             )
         ]
 
-        expenses = expenses[
-            (~expenses.description.isin(payment_descriptions)) & (expenses.fees == 0)
+        transactions = transactions[
+            (~transactions.description.isin(payment_descriptions))
+            & (transactions.fees == 0)
         ].drop(columns=["fees"])
-        expenses.insert(loc=2, column="location", value="")
-        expenses["date"] = expenses["date"].dt.strftime("%d/%m/%Y")
+        transactions.insert(loc=2, column="location", value="")
+        transactions["date"] = transactions["date"].dt.strftime("%d/%m/%Y")
 
-        account_data = AccountData(
-            identifier=self.identifier,
-            amount=0,
-            transactions=[
-                Transaction(
-                    **dict(zip(list(Transaction.model_fields), raw_transaction))
-                )
-                for raw_transaction in expenses.values.tolist()
-            ],
-        )
-
-        (VigilantIOResources.OUTPUT_PATH / IOResources.OUTPUT_FILENAME).write_text(
-            account_data.model_dump_json()
-        )
+        return transactions.values.tolist()

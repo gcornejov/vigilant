@@ -3,7 +3,7 @@ from typing import Type
 from vigilant import logger
 from vigilant.common.browser import session
 from vigilant.common.storage import clear_resources
-from vigilant.core.collector.scraper import (
+from vigilant.collector.scraper import (
     BancoChileScraper,
     BancoFalabellaScraper,
     Scraper,

@@ -18,7 +18,24 @@ class Secrets(BaseSettings):
     HOME_URL: str
 
 
+class SpreadsheetResources(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_prefix="FALABELLA_",
+        extra="ignore",
+    )
+
+    WORKSHEET_NAME: Final[str] = "Data"
+    AMOUNT_CELL: Final[str] = "K2"
+    TRANSACTIONS_CELL: Final[str] = "K5"
+
+    UPDATE_DATE_CELL: Final[str] = "M3"
+    RUN_STATUS_CELL: Final[str] = "N3"
+
+
 secrets = Secrets()
+spreadsheet_resources = SpreadsheetResources()
 
 
 class Locators:

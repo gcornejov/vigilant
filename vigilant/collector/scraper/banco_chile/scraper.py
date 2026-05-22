@@ -1,4 +1,5 @@
 from contextlib import suppress
+from functools import lru_cache
 from typing import Final
 
 import pandas as pd
@@ -6,27 +7,32 @@ from playwright.sync_api import TimeoutError
 
 from vigilant.common.models import AccountData, Transaction
 from vigilant.common.spreadsheet import SpreadSheet
-from vigilant.common.values import (
-    balance_spreadsheet,
-    IOResources as VigilantIOResources,
-)
-from vigilant.core.collector.scraper.banco_chile.values import (
+from vigilant.common.values import balance_spreadsheet
+from vigilant.collector.scraper.banco_chile.values import (
     secrets,
+    spreadsheet_resources,
     Locators,
     IOResources,
 )
-from vigilant.core.collector.scraper import Scraper
+from vigilant.collector.scraper import Scraper
+from vigilant.collector.scraper.scraper import SpreadsheetConfig
 
 
 class BancoChileScraper(Scraper):
-    amount: int
     identifier: Final[str] = "Chile"
+    amount: int
+    spreadsheet_config = SpreadsheetConfig(
+        spreadsheet_resources.WORKSHEET_NAME,
+        spreadsheet_resources.AMOUNT_CELL,
+        spreadsheet_resources.TRANSACTIONS_CELL,
+        spreadsheet_resources.UPDATE_DATE_CELL,
+        spreadsheet_resources.RUN_STATUS_CELL,
+    )
 
     def navigate(self) -> None:
         self._login()
         self._get_current_amount()
         self._get_credit_transactions()
-        self._save()
 
     def _login(self) -> None:
         """Login to Web portal"""
@@ -77,27 +83,45 @@ class BancoChileScraper(Scraper):
 
         download_info.value.save_as(self.data_path / IOResources.TRANSACTIONS_FILENAME)
 
-    def _save(self) -> None:
-        """Structure and saves collected data in a json file"""
-        self.logger.info("Saving data ...")
+    @property
+    @lru_cache(maxsize=128)
+    def account_data(self) -> AccountData:
+        """Returns collected data structured in an AccountData object"""
+        return AccountData(
+            identifier=self.identifier,
+            amount=self.amount,
+            transactions=[
+                Transaction(
+                    **dict(zip(list(Transaction.model_fields), raw_transaction))
+                )
+                for raw_transaction in self._load_transactions()
+            ],
+        )
 
+    def _load_transactions(self) -> list[list]:
+        """Loads transactions data from a file
+
+        Returns:
+            list[list]: list of transactions
+        """
         transactions_file = self.data_path / IOResources.TRANSACTIONS_FILENAME
-        collected_transactions: list[Transaction] = []
+        collected_transactions: list[list] = []
+
         if transactions_file.exists():
-            EXPENSES_COLUMNS_INDEX: tuple[str] = (1, 4, 6, 10)
-            EXPENSES_COLUMNS_KEYS: tuple[str] = (
+            TRANSACTIONS_COLUMNS_INDEX: tuple[str] = (1, 4, 6, 10)
+            TRANSACTIONS_COLUMNS_KEYS: tuple[str] = (
                 "date",
                 "description",
                 "location",
                 "amount",
             )
 
-            expenses: pd.DataFrame = pd.read_excel(
+            transactions: pd.DataFrame = pd.read_excel(
                 transactions_file,
                 sheet_name=0,
                 header=17,
-                names=EXPENSES_COLUMNS_KEYS,
-                usecols=EXPENSES_COLUMNS_INDEX,
+                names=TRANSACTIONS_COLUMNS_KEYS,
+                usecols=TRANSACTIONS_COLUMNS_INDEX,
             )
 
             spreadsheet = SpreadSheet.load(balance_spreadsheet.KEY)
@@ -109,23 +133,10 @@ class BancoChileScraper(Scraper):
                 )
             ]
 
-            expenses = expenses[
-                (~expenses.description.isin(payment_descriptions))
+            transactions = transactions[
+                (~transactions.description.isin(payment_descriptions))
             ].fillna("")
 
-            collected_transactions = [
-                Transaction(
-                    **dict(zip(list(Transaction.model_fields), raw_transaction))
-                )
-                for raw_transaction in expenses.values.tolist()
-            ]
+            collected_transactions = transactions.values.tolist()
 
-        account_data = AccountData(
-            identifier=self.identifier,
-            amount=self.amount,
-            transactions=collected_transactions,
-        )
-
-        (VigilantIOResources.OUTPUT_PATH / IOResources.OUTPUT_FILENAME).write_text(
-            account_data.model_dump_json()
-        )
+        return collected_transactions

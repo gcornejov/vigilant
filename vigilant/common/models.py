@@ -1,36 +1,6 @@
 from __future__ import annotations
-from datetime import datetime
 
 from pydantic import BaseModel
-
-
-class AccountReport(BaseModel):
-    accounts: list[AccountData]
-
-    @property
-    def amount(self) -> int:
-        """Sums amounts across all accounts
-
-        Returns:
-            int: Total amount across all accounts
-        """
-        return sum(acc.amount for acc in self.accounts)
-
-    @property
-    def transactions(self) -> list[list[str, int]]:
-        """Flattened, enriched, and date-sorted transactions
-
-        Returns:
-            list[list[str, int]]: All transactions list across all accounts
-        """
-        flat_list = []
-        for acc in self.accounts:
-            for trans in acc.transactions:
-                flat_list.append([acc.identifier] + trans.to_list())
-
-        return sorted(
-            flat_list, key=lambda x: datetime.strptime(x[1], "%d/%m/%Y"), reverse=True
-        )
 
 
 class AccountData(BaseModel):

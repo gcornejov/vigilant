@@ -1,5 +1,4 @@
-from vigilant import logger
-from vigilant.core import collector, update_spreadsheet
+from vigilant import collector, logger
 
 
 def main():
@@ -7,6 +6,5 @@ def main():
     spreadsheet
     """
     collector.collect()
-    update_spreadsheet.main()
 
     logger.info("Operation completed successfully")

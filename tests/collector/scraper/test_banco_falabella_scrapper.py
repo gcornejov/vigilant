@@ -1,34 +1,21 @@
-import json
 from pathlib import Path
-from typing import Any
 from unittest import mock
 
 import pandas as pd
-import pytest
 
-from vigilant.core.collector.scraper.banco_falabella.values import Locators, IOResources
-from vigilant.core.collector.scraper import BancoFalabellaScraper
-
-
-@pytest.fixture
-def mock_bank_falabella_data() -> dict:
-    return json.loads(Path("tests/resources/bank_falabella.json").read_text())
+from vigilant.collector.scraper.banco_falabella.values import Locators, IOResources
+from vigilant.collector.scraper import BancoFalabellaScraper
 
 
-@mock.patch("vigilant.core.collector.scraper.BancoFalabellaScraper._login")
-@mock.patch(
-    "vigilant.core.collector.scraper.BancoFalabellaScraper._get_credit_transactions"
-)
-@mock.patch("vigilant.core.collector.scraper.BancoFalabellaScraper._save")
+@mock.patch("vigilant.collector.scraper.BancoFalabellaScraper._login")
+@mock.patch("vigilant.collector.scraper.BancoFalabellaScraper._get_credit_transactions")
 def test_navigate(
-    _save: mock.MagicMock,
     _get_credit_transactions: mock.MagicMock,
     _login: mock.MagicMock,
     mock_page: mock.MagicMock,
 ) -> None:
     BancoFalabellaScraper(mock_page).navigate()
 
-    _save.assert_called_once()
     _login.assert_called_once()
     _get_credit_transactions.assert_called_once()
 
@@ -96,20 +83,47 @@ def test_get_credit_transactions(tmp_path: Path, mock_page: mock.MagicMock) -> N
     )
 
 
-@mock.patch("vigilant.core.collector.scraper.banco_falabella.scraper.SpreadSheet")
-@mock.patch("vigilant.core.collector.scraper.banco_falabella.scraper.pd.read_excel")
-def test_save(
+def test_account_data_property(mock_page: mock.MagicMock) -> None:
+    raw_transactions: list[list] = [
+        ["31/12/1999", "Clothes", "", 25000],
+        ["24/12/1999", "Food", "", 40000],
+    ]
+
+    scraper = BancoFalabellaScraper(mock_page)
+
+    with mock.patch.object(
+        BancoFalabellaScraper,
+        "_load_transactions",
+        return_value=raw_transactions,
+    ) as load_transactions:
+        account_data = scraper.account_data
+        account_data_again = scraper.account_data
+
+    load_transactions.assert_called_once()
+
+    assert account_data.identifier == "Falabella"
+    assert account_data.amount == 0
+    assert len(account_data.transactions) == 2
+    assert account_data.transactions[0].date == "31/12/1999"
+    assert account_data.transactions[0].description == "Clothes"
+    assert account_data.transactions[0].location == ""
+    assert account_data.transactions[0].amount == 25000
+
+    assert account_data_again is account_data
+
+
+@mock.patch("vigilant.collector.scraper.banco_falabella.scraper.SpreadSheet")
+@mock.patch("vigilant.collector.scraper.banco_falabella.scraper.pd.read_excel")
+def test_load_transactions(
     mock_pd_read_excel: mock.MagicMock,
     MockSpreadSheet: mock.MagicMock,
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
     mock_page: mock.MagicMock,
-    mock_bank_falabella_data: dict,
 ) -> None:
     mock_cols_keys: tuple[str] = ("date", "description", "fees", "amount")
-    mock_cols_index: tuple[str] = (0, 1, 4, 5)
+    mock_cols_index: tuple[int, int, int, int] = (0, 1, 4, 5)
 
-    mock_data: list[list[Any]] = [
+    mock_data: list[list] = [
         [pd.to_datetime("1999-12-31"), "Clothes", 0, 25000],
         [pd.to_datetime("1999-12-04"), "PAGO TARJETA CMR", 0, -120000],
         [pd.to_datetime("1999-12-24"), "Food", 0, 40000],
@@ -117,9 +131,7 @@ def test_save(
     ]
     mock_data_df = pd.DataFrame(mock_data, columns=mock_cols_keys)
 
-    mock_payment_description: list[list[str]] = [
-        ["PAGO TARJETA CMR"],
-    ]
+    mock_payment_description: list[list[str]] = [["PAGO TARJETA CMR"]]
 
     mock_pd_read_excel.return_value = mock_data_df
 
@@ -127,27 +139,20 @@ def test_save(
     mock_spreadsheet.read.return_value = mock_payment_description
     MockSpreadSheet.load.return_value = mock_spreadsheet
 
-    monkeypatch.setattr(
-        "vigilant.common.values.IOResources.OUTPUT_PATH",
-        tmp_path,
-    )
-    monkeypatch.setattr(
-        "vigilant.core.collector.scraper.banco_falabella.values.IOResources.OUTPUT_FILENAME",
-        "bank_data.json",
-    )
-
     scraper = BancoFalabellaScraper(mock_page)
-    scraper.data_path = Path("/")
+    scraper.data_path = tmp_path
 
-    scraper._save()
-
-    bank_output: dict = json.loads(Path(tmp_path / "bank_data.json").read_text())
+    result = scraper._load_transactions()
 
     mock_pd_read_excel.assert_called_once_with(
-        Path("/", IOResources.TRANSACTIONS_FILENAME),
+        tmp_path / IOResources.TRANSACTIONS_FILENAME,
         sheet_name=0,
         header=0,
         names=mock_cols_keys,
         usecols=mock_cols_index,
     )
-    assert bank_output == mock_bank_falabella_data
+
+    assert result == [
+        ["31/12/1999", "Clothes", "", 25000],
+        ["24/12/1999", "Food", "", 40000],
+    ]
