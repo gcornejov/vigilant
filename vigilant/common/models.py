@@ -41,8 +41,8 @@ class AccountData(BaseModel):
 
 class Transaction(BaseModel):
     date: str
-    description: str
     location: str
+    description: str
     amount: int
 
     def to_list(self) -> list[str, int]:
@@ -52,3 +52,9 @@ class Transaction(BaseModel):
             list[str, int]: Transaction data as a list
         """
         return list(self.model_dump().values())
+
+
+class BankSheetConfig(BaseModel):
+    worksheet: str
+    amount_cell: str
+    transactions_cell: str

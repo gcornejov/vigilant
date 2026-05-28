@@ -8,7 +8,6 @@ from vigilant.common.models import AccountData, Transaction
 from vigilant.common.spreadsheet import SpreadSheet
 from vigilant.common.values import (
     finances_spreadsheet,
-    IOResources as VigilantIOResources,
 )
 from vigilant.core.collector.scraper.banco_chile.values import (
     secrets,
@@ -26,7 +25,6 @@ class BancoChileScraper(Scraper):
         self._login()
         self._get_current_amount()
         self._get_credit_transactions()
-        self._save()
 
     def _login(self) -> None:
         """Login to Web portal"""
@@ -77,9 +75,9 @@ class BancoChileScraper(Scraper):
 
         download_info.value.save_as(self.data_path / IOResources.TRANSACTIONS_FILENAME)
 
-    def _save(self) -> None:
-        """Structure and saves collected data in a json file"""
-        self.logger.info("Saving data ...")
+    def export(self) -> AccountData:
+        """Structure and returns collected data"""
+        self.logger.info("Exporting data ...")
 
         transactions_file = self.data_path / IOResources.TRANSACTIONS_FILENAME
         collected_transactions: list[Transaction] = []
@@ -99,6 +97,7 @@ class BancoChileScraper(Scraper):
                 names=TRANSACTIONS_COLUMNS_KEYS,
                 usecols=TRANSACTIONS_COLUMNS_INDEX,
             )
+            transactions = transactions.iloc[:, [0, 2, 1, 3]]
 
             spreadsheet = SpreadSheet.load(finances_spreadsheet.KEY)
             payment_descriptions: list[str] = [
@@ -120,12 +119,8 @@ class BancoChileScraper(Scraper):
                 for raw_transaction in transactions.values.tolist()
             ]
 
-        account_data = AccountData(
+        return AccountData(
             identifier=self.identifier,
             amount=self.amount,
             transactions=collected_transactions,
-        )
-
-        (VigilantIOResources.OUTPUT_PATH / IOResources.OUTPUT_FILENAME).write_text(
-            account_data.model_dump_json()
         )
